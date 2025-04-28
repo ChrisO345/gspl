@@ -1,4 +1,4 @@
-package gulp
+package gspl
 
 import (
 	"fmt"
@@ -247,6 +247,6 @@ func TestSolveMinimum(t *testing.T) {
 	}
 }
 
-func TestGulpRun(t *testing.T) {
-	Gulp()
+func TestGsplRun(t *testing.T) {
+	Gspl()
 }

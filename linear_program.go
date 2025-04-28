@@ -1,4 +1,4 @@
-package gulp
+package gspl
 
 import (
 	"fmt"

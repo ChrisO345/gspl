@@ -1,4 +1,4 @@
-package gulp
+package gspl
 
 import (
 	"fmt"
@@ -70,7 +70,7 @@ func NewTableau(lp *LinearProgram) *Tableau {
 		for j, v := range r.Values {
 			if v == 1 {
 				boolean := true
-				for k := 0; k < len(tableau.BasisColumn.Values); k++ {
+				for k := range tableau.BasisColumn.Values {
 					if k == i {
 						continue
 					}
