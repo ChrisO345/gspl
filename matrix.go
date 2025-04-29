@@ -11,8 +11,7 @@ type Numeric interface {
 
 type Matrix struct {
 	Rows, Columns int
-
-	Values [][]float64
+	Values        [][]float64
 }
 
 // NewMatrix returns a new matrix with 0-cells.
@@ -233,4 +232,46 @@ func (m *Matrix) Inv() *Matrix {
 	}
 
 	return inv
+}
+
+// Dot returns the dot product of two column vectors
+func Dot(a, b *Matrix) float64 {
+	if a.Columns != 1 || b.Columns != 1 || a.Rows != b.Rows {
+		panic("Dot: Vectors must be column vectors of the same length")
+	}
+	result := 0.0
+	for i := 0; i < a.Rows; i++ {
+		result += a.Values[i][0] * b.Values[i][0]
+	}
+	return result
+}
+
+// ExtractColumns returns a new matrix containing the columns specified by the indices matrix.
+// Each element in the indices matrix represents the column index to extract from the original matrix.
+func (m *Matrix) ExtractColumns(indices *Matrix) *Matrix {
+	// Ensure that indices matrix has only one column (it represents column indices for extraction)
+	if indices.Columns != 1 {
+		panic("Indices matrix must be a column vector (single column).")
+	}
+
+	// Create a new matrix to hold the extracted columns
+	result := NewMatrix(m.Rows, indices.Rows)
+
+	// Iterate through the rows of the indices matrix (each row gives a column index for extraction)
+	for i := 0; i < indices.Rows; i++ {
+		// Get the column index from the indices matrix
+		columnIndex := int(indices.Values[i][0]) // Assuming indices are stored in the first column of `indices`
+
+		// Validate the column index to make sure it’s within bounds
+		if columnIndex < 0 || columnIndex >= m.Columns {
+			panic(fmt.Sprintf("Column index %d out of bounds", columnIndex))
+		}
+
+		// Copy the column from the original matrix to the new result matrix
+		for j := 0; j < m.Rows; j++ {
+			result.Values[j][i] = m.Values[j][columnIndex]
+		}
+	}
+
+	return result
 }

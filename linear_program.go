@@ -207,5 +207,3 @@ const (
 	LpConstraintEQ = LpConstraintType(0)
 	LpConstraintGE = LpConstraintType(1)
 )
-
-// TODO: Constraint Mapping ?? dictionary??
