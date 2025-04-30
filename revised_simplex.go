@@ -4,29 +4,6 @@ import (
 	"math"
 )
 
-// TODO: It must be noted that this current implementation requires that the linear program be in standard compuational form.
-
-type LinearProgram_ struct {
-	// Solution
-	Solution float64 // z
-
-	// Matrix Representation
-	Variables     Matrix // x
-	ObjectiveFunc Matrix // c
-	Constraints   Matrix // A
-	RHS           Matrix // b
-
-	// Simplex Internal Variables
-	indices  Matrix
-	pivalues Matrix
-	bMatrix  Matrix
-	cb       Matrix
-
-	VariablesMap []string
-	// Status       LpStatus
-	// Sense        LpSense
-}
-
 func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix, exitflag int) {
 	// Create identity matrix I of size m
 	I := Eye(m)
@@ -60,8 +37,6 @@ func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix
 	// Run Phase 1 revised simplex
 	z1, xPhase1, piValues1, indicesPhase1, exitflag1 := RevisedSimplex(A_phase1, b, c_phase1, m, n+m, Bmatrix, indicesInit, 1)
 
-	print("\n\nEND OF PHASE 1\n")
-
 	if exitflag1 == 0 && z1 > 0 {
 		// Infeasible
 		return z1, xPhase1, piValues1, indicesPhase1, 1
@@ -86,13 +61,7 @@ func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix
 		cExtended.Values[i][0] = c.Values[i][0]
 	}
 
-	print("finalIndices: ", finalIndices.String(), "\n")
-	print("A_phase2: ", A_phase2.String(), "\n")
-	print("cExtended: ", cExtended.String(), "\n")
-
 	Bmatrix = A_phase2.ExtractColumns(finalIndices)
-
-	print("Bmatrix: ", Bmatrix.String(), "\n")
 
 	// Run Phase 2 revised simplex
 	z, x, piValues, indices, exitflag2 := RevisedSimplex(A_phase2, b, cExtended, m, n, Bmatrix, finalIndices, 2)
@@ -114,8 +83,6 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 
 	// Calculate the cb vector (cost of basic variables)
 	cb := NewMatrix(m, 1) // Initialize a column vector for cb (same number of rows as the number of basic variables)
-	print("CB: ")
-	print(cb.String())
 
 	for i := range m {
 		index := int(indices.Values[i][0])   // Get the index of the basic variable from indices matrix
@@ -123,19 +90,10 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 	}
 
 	for {
-		print("indices: ")
-		print(indices.String())
-
-		print("CB: ")
-		print(cb.String())
 
 		xb := B.Inv().Mul(b)
-		print("xb: ")
-		print(xb.String())
 
 		pivalues = B.Transpose().Inv().Mul(cb)
-		print("pivalues: ")
-		print(pivalues.String())
 
 		isbasic := NewMatrix(1, n)
 		for i := range m {
@@ -144,8 +102,6 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 				isbasic.Values[0][index] = 1 // Basic variable
 			}
 		}
-		print("isbasic: ")
-		print(isbasic.String())
 
 		as, cs, s := findEnter(A, pivalues, c, isbasic, phase)
 
@@ -164,7 +120,6 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 		}
 
 		leave := findLeave(B, as, xb, phase, n, indices)
-		print("leave: ", leave, "\n")
 		if leave == -1 {
 			for i := range m {
 				idx := int(indices.Values[i][0])
@@ -191,24 +146,16 @@ func findEnter(A, pi, c, isbasic *Matrix, phase int) (as *Matrix, cs float64, s 
 	minrc := math.Inf(1)
 	tolerance := -1.0e-6
 
-	print("findEnter:\n")
-	print("isbasic: ")
-	print(isbasic.String())
-
 	n := isbasic.Length()
-	print("n: ", n, "\n")
 
 	for j := range n {
 		if isbasic.Get(0, j) == 0 {
-			print("j: ", j, "\n")
 			aj := &Matrix{Rows: A.Rows, Columns: 1, Values: make([][]float64, A.Rows)}
 			for i := range A.Rows {
 				aj.Values[i] = []float64{A.Values[i][j]}
 			}
 			rc := c.Values[j][0] - Dot(pi, aj)
-			print("rc: ", rc, "\n")
 			if rc < minrc {
-				print("New minrc: ", rc, " when j: ", j, "\n")
 				minrc = rc
 				s = j
 				as = aj
@@ -222,10 +169,6 @@ func findEnter(A, pi, c, isbasic *Matrix, phase int) (as *Matrix, cs float64, s 
 		cs = 0.0
 		s = -1
 	}
-
-	print("as: ", as.String(), "\n")
-	print("cs: ", cs, "\n")
-	print("s: ", s, "\n")
 
 	return as, cs, s
 }

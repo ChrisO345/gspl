@@ -5,45 +5,78 @@ import (
 	"math"
 )
 
-// LinearProgram The Linear Program
 type LinearProgram struct {
-	ObjectiveFunction LpExpression
-	Sense             LpSense
-	Constraints       []_constraint
-	hiddenSense       LpSense
-
 	// Solution
-	Solution     map[string]float64
-	OptimalValue float64
+	Solution float64 // z
+
+	// Matrix Representation
+	Variables     *Matrix // x
+	ObjectiveFunc *Matrix // c
+	Constraints   *Matrix // A
+	RHS           *Matrix // b
+
+	// Simplex Internal Variables
+	indices  *Matrix
+	pivalues *Matrix
+	bMatrix  *Matrix
+	cb       *Matrix
+
+	// Others
+	Description  string
+	VariablesMap []string
 	Status       LpStatus
+	Sense        LpSense
 }
 
 // NewLinearProgram Create a new Linear Program
-func NewLinearProgram() LinearProgram {
-	lp := LinearProgram{}
+func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
+	lp := LinearProgram{
+		Description:  desc,
+		VariablesMap: make([]string, len(vars)),
+	}
+
+	for i, v := range vars {
+		lp.VariablesMap[i] = v.Name
+	}
+
 	lp.Status = LpStatusNotSolved
 	return lp
 }
 
 // AddObjective Add an objective to the linear program
 func (lp *LinearProgram) AddObjective(sense LpSense, objective LpExpression) *LinearProgram {
-	lp.hiddenSense = sense
-	if sense == LpMinimise {
-		for i := range objective.Terms {
-			objective.Terms[i].Coefficient *= -1
-		}
-		sense = LpMaximise
+	if sense != LpMinimise {
+		panic("Not Implemented, use LpMinimise")
 	}
 	lp.Sense = sense
-	lp.ObjectiveFunction = objective
+	// lp.ObjectiveFunction = objective
+	lp.ObjectiveFunc = NewMatrix(len(objective.Terms), 1)
+	for i, v := range objective.Terms {
+		mappedIndex := -1
+		for j, varName := range lp.VariablesMap {
+			if varName == v.Variable.Name {
+				mappedIndex = j
+				break
+			}
+		}
+		if mappedIndex == -1 {
+			panic(fmt.Sprintf("Variable %s not found in Linear Program", v.Variable.Name))
+		}
+		lp.ObjectiveFunc.Set(i, 0, v.Coefficient)
+	}
+
 	return lp
 }
 
 // AddConstraint Add a constraint to the linear program
 func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType LpConstraintType, rightHandSide float64) *LinearProgram {
 	// Panic if objective function is not set
-	if len(lp.ObjectiveFunction.Terms) == 0 {
+	if lp.ObjectiveFunc == nil {
 		panic("Objective function not set")
+	}
+
+	if constraintType != LpConstraintEQ {
+		panic("Only LpConstraintEQ is supported")
 	}
 
 	if rightHandSide < 0 {
@@ -56,43 +89,73 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 	}
 
 	// Add Artificial Variables
-	if constraintType == LpConstraintEQ || constraintType == LpConstraintGE {
-		variable := NewArtificialVariable(fmt.Sprintf("a%d", len(lp.Constraints)+1))
-		constraint.Terms = append(constraint.Terms, NewTerm(1, variable))
-		lp.ObjectiveFunction.Terms = append(lp.ObjectiveFunction.Terms, NewTerm(-1e20, variable))
-	}
+	// if constraintType == LpConstraintEQ || constraintType == LpConstraintGE {
+	// 	variable := NewArtificialVariable(fmt.Sprintf("a%d", len(lp.Constraints)+1))
+	// 	constraint.Terms = append(constraint.Terms, NewTerm(1, variable))
+	// 	lp.ObjectiveFunction.Terms = append(lp.ObjectiveFunction.Terms, NewTerm(-1e20, variable))
+	// }
 
 	// Add Slack Variables
-	if constraintType == LpConstraintLE || constraintType == LpConstraintGE {
-		variable := NewSlackVariable(fmt.Sprintf("s%d", len(lp.Constraints)+1))
-		sign := 1.0
-		if constraintType == LpConstraintGE {
-			sign = -1.0
-		}
-		constraint.Terms = append(constraint.Terms, NewTerm(sign, variable))
-		lp.ObjectiveFunction.Terms = append(lp.ObjectiveFunction.Terms, NewTerm(0, variable))
-		constraintType = LpConstraintEQ
+	// if constraintType == LpConstraintLE || constraintType == LpConstraintGE {
+	// 	variable := NewSlackVariable(fmt.Sprintf("s%d", len(lp.Constraints)+1))
+	// 	sign := 1.0
+	// 	if constraintType == LpConstraintGE {
+	// 		sign = -1.0
+	// 	}
+	// 	constraint.Terms = append(constraint.Terms, NewTerm(sign, variable))
+	// 	lp.ObjectiveFunction.Terms = append(lp.ObjectiveFunction.Terms, NewTerm(0, variable))
+	// 	constraintType = LpConstraintEQ
+	// }
+
+	// lp.Constraints = append(lp.Constraints, _constraint{constraintType, constraint.Terms, rightHandSide})
+	currentRow := 0
+	if lp.Constraints == nil {
+		lp.Constraints = NewMatrix(1, len(lp.VariablesMap))
+		lp.RHS = NewMatrix(1, 1)
+	} else {
+		currentRow = lp.Constraints.Rows
+		lp.Constraints.Resize(currentRow+1, len(lp.VariablesMap))
+		lp.RHS.Resize(currentRow+1, 1)
 	}
 
-	lp.Constraints = append(lp.Constraints, _constraint{constraintType, constraint.Terms, rightHandSide})
+	newRow := make([]float64, len(lp.VariablesMap))
+	for _, v := range constraint.Terms {
+		mappedIndex := -1
+		for j, varName := range lp.VariablesMap {
+			if varName == v.Variable.Name {
+				mappedIndex = j
+				break
+			}
+		}
+		if mappedIndex == -1 {
+			panic(fmt.Sprintf("Variable %s not found in Linear Program", v.Variable.Name))
+		}
+		newRow[mappedIndex] = v.Coefficient
+	}
+
+	lp.Constraints.SetRow(currentRow, newRow)
+	lp.RHS.Set(currentRow, 0, rightHandSide)
 
 	return lp
 }
 
 func (lp *LinearProgram) Solve() *LinearProgram {
-	tableau := NewTableau(lp)
-	for !tableau.IsOptimal() {
-		tableau.Pivot()
-	}
-	lp.OptimalValue = tableau.TableauValue * float64(lp.hiddenSense)
-	lp.Status = LpStatusOptimal
-	solution := tableau.GetSolution()
-	lp.Solution = make(map[string]float64)
-	for _, v := range lp.ObjectiveFunction.Terms {
-		if v.Variable.IsSlack || v.Variable.IsArtificial {
-			continue
-		}
-		lp.Solution[v.Variable.Name] = solution[v.Variable.Name]
+	m := len(lp.Constraints.Values)
+	n := len(lp.VariablesMap)
+
+	z, x, _, idx, flag := Simplex(lp.Constraints, lp.RHS, lp.ObjectiveFunc, m, n)
+
+	lp.Solution = z
+	lp.Variables = x
+	lp.indices = idx
+
+	switch flag {
+	case 0:
+		lp.Status = LpStatusOptimal
+	case 1:
+		lp.Status = LpStatusInfeasible
+	case -1:
+		lp.Status = LpStatusUnbounded
 	}
 
 	return lp
@@ -100,9 +163,10 @@ func (lp *LinearProgram) Solve() *LinearProgram {
 
 func (lp *LinearProgram) PrintSolution() {
 	fmt.Println(lp.Status.String())
-	fmt.Println(lp.OptimalValue)
-	for k, v := range lp.Solution {
-		fmt.Printf("%v: %v\n", k, v)
+	fmt.Println(lp.Solution)
+
+	for i, v := range lp.VariablesMap {
+		fmt.Printf("%s: %f\n", v, lp.Variables.Get(i, 0))
 	}
 }
 

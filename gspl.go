@@ -1,5 +1,9 @@
 package gspl
 
+import (
+	"fmt"
+)
+
 func Gspl() {
 	// Objective: Minimise - 6 * x1 + 7 * x2 + 4 * x3
 	// Constraints: 2 * x1 + 5 * x2 - 1 * x3 <= 18
@@ -47,13 +51,13 @@ func Gspl() {
 		NewTerm(1, variables[4]),
 	}
 
-	lp := NewLinearProgram()
+	lp := NewLinearProgram("Test", variables)
 	lp.AddObjective(LpMinimise, objective).
 		AddConstraint(NewExpression(terms2), LpConstraintEQ, 4).
 		AddConstraint(NewExpression(terms3), LpConstraintEQ, 4).
 		AddConstraint(NewExpression(terms4), LpConstraintEQ, 8)
 
-	//fmt.Println(lp.String())
+	fmt.Println(lp.String())
 
 	lp.Solve().PrintSolution()
 

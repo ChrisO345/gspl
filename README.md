@@ -1,22 +1,21 @@
 # gspl
 
-*A Simplex Method Linear Programming Solver in Go.*
-
-**gspl** is a minimal, educational linear programming solver built using the simplex method. It’s designed to be easy to understand and straightforward to use.
-
+**gspl** (short for **Go Simplex Programming Library**, pronounced *gospel*) is a lightweight solver for linear programming problems, based on the revised simplex method and implemented in Go. It is designed for clarity, numerical stability, and seamless integration into Go applications.
 ___
 
 ## Features
 
-- **Simplex Method**: Uses the simplex method to solve linear programming problems.
-- **Minimization and Maximization**: Can solve both minimization and maximization problems.
-- **Simple Interface**: Designed to be easy to use and understand.
+- Solves optimal, unbounded, infeasible and degenerate linear problems.
+- Implements an effective revised simplex algorithm.
+- Clean and simple API for defining and solving linear problems.
+- Emphasis on numerical stability and performance.
 
+`gspl` provides a solid foundation for applications requiring reliable and efficient linear optimisation within the Go ecosystem.
 ___
 
 ## Installation
 
-To install **gspl**, you need to have Go installed on your machine. Then, you can run the following command:
+To install `gspl`, you need to have Go installed on your machine. Then, you can run the following command:
 
 ```bash
 go get github.com/chriso345/gspl
@@ -84,11 +83,11 @@ We're defining a linear programming problem where:
     - $x_1 - x_2 - 2x_3 \leq -14$
     - $3x_1 + 2x_2 + 2x_3 = 26$
 
-When we run this program, **gspl** will solve the linear programming problem and print the solution, and optimal values for $x_1$, $x_2$, and $x_3$.
+When we run this program, `gspl` will solve the linear programming problem and print the solution, and optimal values for $x_1$, $x_2$, and $x_3$.
 
 ___
 
-## The API
+## API Overview
 
 ### Decision Variables
 

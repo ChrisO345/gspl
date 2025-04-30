@@ -240,7 +240,7 @@ func Dot(a, b *Matrix) float64 {
 		panic("Dot: Vectors must be column vectors of the same length")
 	}
 	result := 0.0
-	for i := 0; i < a.Rows; i++ {
+	for i := range a.Rows {
 		result += a.Values[i][0] * b.Values[i][0]
 	}
 	return result
@@ -258,7 +258,7 @@ func (m *Matrix) ExtractColumns(indices *Matrix) *Matrix {
 	result := NewMatrix(m.Rows, indices.Rows)
 
 	// Iterate through the rows of the indices matrix (each row gives a column index for extraction)
-	for i := 0; i < indices.Rows; i++ {
+	for i := range indices.Rows {
 		// Get the column index from the indices matrix
 		columnIndex := int(indices.Values[i][0]) // Assuming indices are stored in the first column of `indices`
 
@@ -268,10 +268,49 @@ func (m *Matrix) ExtractColumns(indices *Matrix) *Matrix {
 		}
 
 		// Copy the column from the original matrix to the new result matrix
-		for j := 0; j < m.Rows; j++ {
+		for j := range m.Rows {
 			result.Values[j][i] = m.Values[j][columnIndex]
 		}
 	}
 
 	return result
+}
+
+// Resize resizes the matrix to the specified number of rows and columns.
+// If the new size is larger, the new cells are initialized to 0.
+// If the new size is smaller, the excess cells are discarded.
+func (m *Matrix) Resize(rows, columns int) {
+	if rows < 0 || columns < 0 {
+		panic("Matrix size cannot be negative")
+	}
+
+	newValues := make([][]float64, rows)
+	for i := range newValues {
+		newValues[i] = make([]float64, columns)
+		for j := range newValues[i] {
+			if i < m.Rows && j < m.Columns {
+				newValues[i][j] = m.Values[i][j]
+			} else {
+				newValues[i][j] = 0.0
+			}
+		}
+	}
+	m.Rows = rows
+	m.Columns = columns
+	m.Values = newValues
+}
+
+// SetRow sets the values of a specific row in the matrix
+func (m *Matrix) SetRow(row int, values []float64) {
+	if row < 0 || row >= m.Rows {
+		panic("Row index out of bounds")
+	}
+
+	if len(values) != m.Columns {
+		panic("Length of values does not match number of columns")
+	}
+
+	for j := range m.Columns {
+		m.Values[row][j] = values[j]
+	}
 }

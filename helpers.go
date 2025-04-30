@@ -2,7 +2,6 @@ package gspl
 
 import (
 	"fmt"
-	"math"
 )
 
 func (lp *LinearProgram) String() string {
@@ -13,43 +12,22 @@ func (lp *LinearProgram) String() string {
 		stringBuilder += "Max: "
 	}
 
-	for i, v := range lp.ObjectiveFunction.Terms {
-		if i != 0 && lp.ObjectiveFunction.Terms[i].Coefficient >= 0 {
-			stringBuilder += "+ "
-		} else if lp.ObjectiveFunction.Terms[i].Coefficient < 0 {
-			stringBuilder += "- "
-		}
+	stringBuilder += "\n"
 
-		stringBuilder += fmt.Sprintf("%v * %v", math.Abs(lp.ObjectiveFunction.Terms[i].Coefficient), v.Variable.Name)
-		if i < len(lp.ObjectiveFunction.Terms)-1 {
-			stringBuilder += " "
-		}
-	}
+	stringBuilder += "Objective: "
+	stringBuilder += lp.ObjectiveFunc.String()
 
-	for _, c := range lp.Constraints {
-		stringBuilder += "\n\t"
-		for i, v := range c.Terms {
-			if i != 0 && c.Terms[i].Coefficient >= 0 {
-				stringBuilder += "+ "
-			} else if c.Terms[i].Coefficient < 0 {
-				stringBuilder += "- "
-			}
+	stringBuilder += "\n"
 
-			stringBuilder += fmt.Sprintf("%v * %v", math.Abs(c.Terms[i].Coefficient), v.Variable.Name)
-			if i < len(c.Terms)-1 {
-				stringBuilder += " "
+	stringBuilder += "Constraints: "
+	for i, v := range lp.Constraints.Values {
+		stringBuilder += fmt.Sprintf("C%d: ", i)
+		for j, val := range v {
+			if val != 0 {
+				stringBuilder += fmt.Sprintf("%f * %s + ", val, lp.VariablesMap[j])
 			}
 		}
-		switch c.ConstraintType {
-		case LpConstraintLE:
-			stringBuilder += " <= "
-		case LpConstraintEQ:
-			stringBuilder += " = "
-		case LpConstraintGE:
-			stringBuilder += " >= "
-		}
-
-		stringBuilder += fmt.Sprintf("%v", c.RightHandSide)
+		stringBuilder += fmt.Sprintf("= %f\n", lp.RHS.Values[i][0])
 	}
 
 	return stringBuilder
