@@ -22,10 +22,11 @@ type LinearProgram struct {
 	cb       *Matrix
 
 	// Others
-	Description  string
-	VariablesMap []string
-	Status       LpStatus
-	Sense        LpSense
+	Description      string
+	VariablesMap     []string
+	Status           LpStatus
+	Sense            LpSense
+	ConstraintVector []LpConstraintType
 }
 
 // NewLinearProgram Create a new Linear Program
@@ -45,9 +46,6 @@ func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 
 // AddObjective Add an objective to the linear program
 func (lp *LinearProgram) AddObjective(sense LpSense, objective LpExpression) *LinearProgram {
-	if sense != LpMinimise {
-		panic("Not Implemented, use LpMinimise")
-	}
 	lp.Sense = sense
 	// lp.ObjectiveFunction = objective
 	lp.ObjectiveFunc = NewMatrix(len(objective.Terms), 1)
@@ -65,6 +63,12 @@ func (lp *LinearProgram) AddObjective(sense LpSense, objective LpExpression) *Li
 		lp.ObjectiveFunc.Set(i, 0, v.Coefficient)
 	}
 
+	if lp.Sense == LpMaximise {
+		for i := range lp.ObjectiveFunc.Values {
+			lp.ObjectiveFunc.Values[i][0] *= -1
+		}
+	}
+
 	return lp
 }
 
@@ -75,9 +79,7 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 		panic("Objective function not set")
 	}
 
-	if constraintType != LpConstraintEQ {
-		panic("Only LpConstraintEQ is supported")
-	}
+	lp.ConstraintVector = append(lp.ConstraintVector, constraintType)
 
 	if rightHandSide < 0 {
 		// Multiply the constraint by -1, flip equality sign
@@ -88,26 +90,6 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 		constraintType = -constraintType
 	}
 
-	// Add Artificial Variables
-	// if constraintType == LpConstraintEQ || constraintType == LpConstraintGE {
-	// 	variable := NewArtificialVariable(fmt.Sprintf("a%d", len(lp.Constraints)+1))
-	// 	constraint.Terms = append(constraint.Terms, NewTerm(1, variable))
-	// 	lp.ObjectiveFunction.Terms = append(lp.ObjectiveFunction.Terms, NewTerm(-1e20, variable))
-	// }
-
-	// Add Slack Variables
-	// if constraintType == LpConstraintLE || constraintType == LpConstraintGE {
-	// 	variable := NewSlackVariable(fmt.Sprintf("s%d", len(lp.Constraints)+1))
-	// 	sign := 1.0
-	// 	if constraintType == LpConstraintGE {
-	// 		sign = -1.0
-	// 	}
-	// 	constraint.Terms = append(constraint.Terms, NewTerm(sign, variable))
-	// 	lp.ObjectiveFunction.Terms = append(lp.ObjectiveFunction.Terms, NewTerm(0, variable))
-	// 	constraintType = LpConstraintEQ
-	// }
-
-	// lp.Constraints = append(lp.Constraints, _constraint{constraintType, constraint.Terms, rightHandSide})
 	currentRow := 0
 	if lp.Constraints == nil {
 		lp.Constraints = NewMatrix(1, len(lp.VariablesMap))
@@ -140,6 +122,24 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 }
 
 func (lp *LinearProgram) Solve() *LinearProgram {
+	// Add slacks for non-equality constraints
+	for i, constraintType := range lp.ConstraintVector {
+		if constraintType != LpConstraintEQ {
+			slack := NewVariable(fmt.Sprintf("s%d", i))
+			lp.VariablesMap = append(lp.VariablesMap, slack.Name)
+			unitVector := NewMatrix(len(lp.Constraints.Values), 1)
+			one := 1.0
+			if constraintType == LpConstraintGE {
+				one = -1.0
+			}
+			unitVector.Set(i, 0, one)
+			lp.Constraints = lp.Constraints.ConcatColumn(unitVector)
+
+			lp.ObjectiveFunc.Resize(len(lp.ObjectiveFunc.Values)+1, len(lp.ObjectiveFunc.Values[0]))
+			lp.ObjectiveFunc.Set(len(lp.ObjectiveFunc.Values)-1, len(lp.ObjectiveFunc.Values[0])-1, 0)
+		}
+	}
+
 	m := len(lp.Constraints.Values)
 	n := len(lp.VariablesMap)
 
@@ -156,6 +156,10 @@ func (lp *LinearProgram) Solve() *LinearProgram {
 		lp.Status = LpStatusInfeasible
 	case -1:
 		lp.Status = LpStatusUnbounded
+	}
+
+	if lp.Sense == LpMaximise {
+		lp.Solution *= -1
 	}
 
 	return lp
@@ -202,24 +206,6 @@ func NewVariable(name string) LpVariable {
 	return LpVariable{name, 0, false, false}
 }
 
-func NewSlackVariable(name string) LpVariable {
-	return LpVariable{name, 0, true, false}
-}
-
-func NewArtificialVariable(name string) LpVariable {
-	return LpVariable{name, 0, false, true}
-}
-
-type _constraint struct {
-	ConstraintType LpConstraintType
-	Terms          []LpTerm
-	RightHandSide  float64
-}
-
-/* #####################################################################################################################
-TO BE MOVED TO SEPARATE FILES
-##################################################################################################################### */
-
 // LpCategory Note that this is currently not used
 type LpCategory string
 
@@ -229,16 +215,12 @@ const (
 	LpBinary     = LpCategory("Binary")
 )
 
-// TODO: Category Mapping ?? dictionary??
-
 type LpSense int
 
 const (
 	LpMinimise = LpSense(-1)
 	LpMaximise = LpSense(1)
 )
-
-// TODO: Sense Mapping ?? dictionary??
 
 type LpStatus int
 

@@ -1,7 +1,7 @@
 package gspl
 
 import (
-	"fmt"
+// "fmt"
 )
 
 func Gspl() {
@@ -28,36 +28,36 @@ func Gspl() {
 	objective := NewExpression(terms)
 
 	terms2 := []LpTerm{
-		NewTerm(1, variables[0]),
-		NewTerm(1, variables[1]),
-		NewTerm(1, variables[2]),
-		NewTerm(1, variables[3]),
+		NewTerm(-1, variables[0]),
+		NewTerm(-1, variables[1]),
+		NewTerm(-1, variables[2]),
+		NewTerm(-1, variables[3]),
 		NewTerm(0, variables[4]),
 	}
 
 	terms3 := []LpTerm{
 		NewTerm(0, variables[0]),
-		NewTerm(-1, variables[1]),
+		NewTerm(1, variables[1]),
 		NewTerm(0, variables[2]),
-		NewTerm(-1, variables[3]),
-		NewTerm(1, variables[4]),
+		NewTerm(1, variables[3]),
+		NewTerm(-1, variables[4]),
 	}
 
 	terms4 := []LpTerm{
-		NewTerm(1, variables[0]),
+		NewTerm(-1, variables[0]),
 		NewTerm(0, variables[1]),
-		NewTerm(1, variables[2]),
+		NewTerm(-1, variables[2]),
 		NewTerm(0, variables[3]),
-		NewTerm(1, variables[4]),
+		NewTerm(-1, variables[4]),
 	}
 
 	lp := NewLinearProgram("Test", variables)
-	lp.AddObjective(LpMinimise, objective).
-		AddConstraint(NewExpression(terms2), LpConstraintEQ, 4).
-		AddConstraint(NewExpression(terms3), LpConstraintEQ, 4).
-		AddConstraint(NewExpression(terms4), LpConstraintEQ, 8)
+	lp.AddObjective(LpMaximise, objective).
+		AddConstraint(NewExpression(terms2), LpConstraintLE, -4).
+		AddConstraint(NewExpression(terms3), LpConstraintLE, -4).
+		AddConstraint(NewExpression(terms4), LpConstraintLE, -8)
 
-	fmt.Println(lp.String())
+	// fmt.Println(lp.String())
 
 	lp.Solve().PrintSolution()
 

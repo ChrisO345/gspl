@@ -314,3 +314,19 @@ func (m *Matrix) SetRow(row int, values []float64) {
 		m.Values[row][j] = values[j]
 	}
 }
+
+// ConcatColumn concatenates a column matrix to the right of the current matrix
+func (m *Matrix) ConcatColumn(column *Matrix) *Matrix {
+	if m.Rows != column.Rows {
+		panic("Matrix dimensions do not match")
+	}
+
+	result := NewMatrix(m.Rows, m.Columns+1)
+	for i := range m.Rows {
+		for j := range m.Columns {
+			result.Values[i][j] = m.Values[i][j]
+		}
+		result.Values[i][m.Columns] = column.Values[i][0]
+	}
+	return result
+}

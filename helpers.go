@@ -5,7 +5,8 @@ import (
 )
 
 func (lp *LinearProgram) String() string {
-	stringBuilder := ""
+	stringBuilder := lp.Description
+	stringBuilder += "\n"
 	if lp.Sense == LpMinimise {
 		stringBuilder += "Min: "
 	} else {
@@ -19,7 +20,7 @@ func (lp *LinearProgram) String() string {
 
 	stringBuilder += "\n"
 
-	stringBuilder += "Constraints: "
+	stringBuilder += "Constraints: \n"
 	for i, v := range lp.Constraints.Values {
 		stringBuilder += fmt.Sprintf("C%d: ", i)
 		for j, val := range v {
