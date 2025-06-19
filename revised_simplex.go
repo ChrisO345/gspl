@@ -103,7 +103,7 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 			}
 		}
 
-		as, cs, s := findEnter(A, pivalues, c, isbasic, phase)
+		as, cs, s := findEnter(A, pivalues, c, isbasic)
 
 		if s == -1 {
 			for i := range m {
@@ -139,7 +139,7 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 	}
 }
 
-func findEnter(A, pi, c, isbasic *Matrix, phase int) (as *Matrix, cs float64, s int) {
+func findEnter(A, pi, c, isbasic *Matrix) (as *Matrix, cs float64, s int) {
 	s = -1
 	as = nil
 	cs = 0.0
