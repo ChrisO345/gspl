@@ -1,4 +1,4 @@
-package gspl
+package matrix
 
 import (
 	"math"

@@ -1,7 +1,9 @@
-package gspl
+package solver
 
 import (
 	"fmt"
+	"github.com/chriso345/gspl/internal/simplex"
+	"github.com/chriso345/gspl/matrix"
 	"math"
 )
 
@@ -10,16 +12,16 @@ type LinearProgram struct {
 	Solution float64 // z
 
 	// Matrix Representation
-	Variables     *Matrix // x
-	ObjectiveFunc *Matrix // c
-	Constraints   *Matrix // A
-	RHS           *Matrix // b
+	Variables     *matrix.Matrix // x
+	ObjectiveFunc *matrix.Matrix // c
+	Constraints   *matrix.Matrix // A
+	RHS           *matrix.Matrix // b
 
 	// Simplex Internal Variables
-	indices  *Matrix
-	pivalues *Matrix
-	bMatrix  *Matrix
-	cb       *Matrix
+	indices  *matrix.Matrix
+	pivalues *matrix.Matrix
+	bMatrix  *matrix.Matrix
+	cb       *matrix.Matrix
 
 	// Others
 	Description      string
@@ -48,7 +50,7 @@ func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 func (lp *LinearProgram) AddObjective(sense LpSense, objective LpExpression) *LinearProgram {
 	lp.Sense = sense
 	// lp.ObjectiveFunction = objective
-	lp.ObjectiveFunc = NewMatrix(len(objective.Terms), 1)
+	lp.ObjectiveFunc = matrix.NewMatrix(len(objective.Terms), 1)
 	for i, v := range objective.Terms {
 		mappedIndex := -1
 		for j, varName := range lp.VariablesMap {
@@ -92,8 +94,8 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 
 	currentRow := 0
 	if lp.Constraints == nil {
-		lp.Constraints = NewMatrix(1, len(lp.VariablesMap))
-		lp.RHS = NewMatrix(1, 1)
+		lp.Constraints = matrix.NewMatrix(1, len(lp.VariablesMap))
+		lp.RHS = matrix.NewMatrix(1, 1)
 	} else {
 		currentRow = lp.Constraints.Rows
 		lp.Constraints.Resize(currentRow+1, len(lp.VariablesMap))
@@ -127,7 +129,7 @@ func (lp *LinearProgram) Solve() *LinearProgram {
 		if constraintType != LpConstraintEQ {
 			slack := NewVariable(fmt.Sprintf("s%d", i))
 			lp.VariablesMap = append(lp.VariablesMap, slack.Name)
-			unitVector := NewMatrix(len(lp.Constraints.Values), 1)
+			unitVector := matrix.NewMatrix(len(lp.Constraints.Values), 1)
 			one := 1.0
 			if constraintType == LpConstraintGE {
 				one = -1.0
@@ -143,7 +145,7 @@ func (lp *LinearProgram) Solve() *LinearProgram {
 	m := len(lp.Constraints.Values)
 	n := len(lp.VariablesMap)
 
-	z, x, _, idx, flag := Simplex(lp.Constraints, lp.RHS, lp.ObjectiveFunc, m, n)
+	z, x, _, idx, flag := simplex.Simplex(lp.Constraints, lp.RHS, lp.ObjectiveFunc, m, n)
 
 	lp.Solution = z
 	lp.Variables = x
@@ -253,3 +255,35 @@ const (
 	LpConstraintEQ = LpConstraintType(0)
 	LpConstraintGE = LpConstraintType(1)
 )
+
+// Utils
+
+func (lp *LinearProgram) String() string {
+	stringBuilder := lp.Description
+	stringBuilder += "\n"
+	if lp.Sense == LpMinimise {
+		stringBuilder += "Min: "
+	} else {
+		stringBuilder += "Max: "
+	}
+
+	stringBuilder += "\n"
+
+	stringBuilder += "Objective: "
+	stringBuilder += lp.ObjectiveFunc.String()
+
+	stringBuilder += "\n"
+
+	stringBuilder += "Constraints: \n"
+	for i, v := range lp.Constraints.Values {
+		stringBuilder += fmt.Sprintf("C%d: ", i)
+		for j, val := range v {
+			if val != 0 {
+				stringBuilder += fmt.Sprintf("%f * %s + ", val, lp.VariablesMap[j])
+			}
+		}
+		stringBuilder += fmt.Sprintf("= %f\n", lp.RHS.Values[i][0])
+	}
+
+	return stringBuilder
+}

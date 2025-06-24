@@ -1,15 +1,17 @@
-package gspl
+package simplex
 
 import (
 	"math"
+
+	"github.com/chriso345/gspl/matrix"
 )
 
-func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix, exitflag int) {
+func Simplex(A, b, c *matrix.Matrix, m, n int) (z float64, x, piValues, indices *matrix.Matrix, exitflag int) {
 	// Create identity matrix I of size m
-	I := Eye(m)
+	I := matrix.Eye(m)
 
 	// Construct A_phase1 = [A | I]
-	A_phase1 := NewMatrix(m, n+m)
+	A_phase1 := matrix.NewMatrix(m, n+m)
 	for i := range m {
 		for j := range n {
 			A_phase1.Values[i][j] = A.Values[i][j]
@@ -20,13 +22,13 @@ func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix
 	}
 
 	// Construct c_phase1 = [0's for x vars; 1's for artificial vars]
-	c_phase1 := NewMatrix(n+m, 1)
+	c_phase1 := matrix.NewMatrix(n+m, 1)
 	for i := n; i < n+m; i++ {
 		c_phase1.Values[i][0] = 1.0
 	}
 
 	// Initial basic indices: the artificial variables
-	indicesInit := NewMatrix(m, 1)
+	indicesInit := matrix.NewMatrix(m, 1)
 	for i := range m {
 		indicesInit.Values[i][0] = float64(n + i)
 	}
@@ -45,7 +47,7 @@ func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix
 	finalIndices := indicesPhase1
 
 	// Phase 2: Solve actual problem
-	A_phase2 := NewMatrix(m, n+m)
+	A_phase2 := matrix.NewMatrix(m, n+m)
 	for i := range m {
 		for j := range n {
 			A_phase2.Values[i][j] = A.Values[i][j]
@@ -56,7 +58,7 @@ func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix
 	}
 
 	// Extend c to include 0s for artificial variables
-	cExtended := NewMatrix(n+m, 1)
+	cExtended := matrix.NewMatrix(n+m, 1)
 	for i := range n {
 		cExtended.Values[i][0] = c.Values[i][0]
 	}
@@ -75,14 +77,14 @@ func Simplex(A, b, c *Matrix, m, n int) (z float64, x, piValues, indices *Matrix
 	return
 }
 
-func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase int) (z float64, x, pivalues, indices *Matrix, exitflag int) {
+func RevisedSimplex(A, b, c *matrix.Matrix, m, n int, Bmatrix, indices_ *matrix.Matrix, phase int) (z float64, x, pivalues, indices *matrix.Matrix, exitflag int) {
 	exitflag = 0
-	x = NewMatrix(n, 1)
+	x = matrix.NewMatrix(n, 1)
 	B := Bmatrix
 	indices = indices_
 
 	// Calculate the cb vector (cost of basic variables)
-	cb := NewMatrix(m, 1) // Initialize a column vector for cb (same number of rows as the number of basic variables)
+	cb := matrix.NewMatrix(m, 1) // Initialize a column vector for cb (same number of rows as the number of basic variables)
 
 	for i := range m {
 		index := int(indices.Values[i][0])   // Get the index of the basic variable from indices matrix
@@ -95,7 +97,7 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 
 		pivalues = B.Transpose().Inv().Mul(cb)
 
-		isbasic := NewMatrix(1, n)
+		isbasic := matrix.NewMatrix(1, n)
 		for i := range m {
 			index := int(indices.Values[i][0])
 			if index < n {
@@ -139,7 +141,7 @@ func RevisedSimplex(A, b, c *Matrix, m, n int, Bmatrix, indices_ *Matrix, phase 
 	}
 }
 
-func findEnter(A, pi, c, isbasic *Matrix) (as *Matrix, cs float64, s int) {
+func findEnter(A, pi, c, isbasic *matrix.Matrix) (as *matrix.Matrix, cs float64, s int) {
 	s = -1
 	as = nil
 	cs = 0.0
@@ -150,11 +152,11 @@ func findEnter(A, pi, c, isbasic *Matrix) (as *Matrix, cs float64, s int) {
 
 	for j := range n {
 		if isbasic.Get(0, j) == 0 {
-			aj := &Matrix{Rows: A.Rows, Columns: 1, Values: make([][]float64, A.Rows)}
+			aj := &matrix.Matrix{Rows: A.Rows, Columns: 1, Values: make([][]float64, A.Rows)}
 			for i := range A.Rows {
 				aj.Values[i] = []float64{A.Values[i][j]}
 			}
-			rc := c.Values[j][0] - Dot(pi, aj)
+			rc := c.Values[j][0] - matrix.Dot(pi, aj)
 			if rc < minrc {
 				minrc = rc
 				s = j
@@ -165,7 +167,7 @@ func findEnter(A, pi, c, isbasic *Matrix) (as *Matrix, cs float64, s int) {
 	}
 
 	if minrc > tolerance {
-		as = NewMatrix(A.Rows, 1)
+		as = matrix.NewMatrix(A.Rows, 1)
 		cs = 0.0
 		s = -1
 	}
@@ -173,7 +175,7 @@ func findEnter(A, pi, c, isbasic *Matrix) (as *Matrix, cs float64, s int) {
 	return as, cs, s
 }
 
-func findLeave(B *Matrix, as *Matrix, xb *Matrix, phase int, n int, indices *Matrix) (leave int) {
+func findLeave(B *matrix.Matrix, as *matrix.Matrix, xb *matrix.Matrix, phase int, n int, indices *matrix.Matrix) (leave int) {
 	leave = -1
 	direction := B.Inv().Mul(as)
 	theta := math.Inf(1)
@@ -201,7 +203,7 @@ func findLeave(B *Matrix, as *Matrix, xb *Matrix, phase int, n int, indices *Mat
 	return
 }
 
-func bUpdate(Bmatrix, indices, cb, as *Matrix, s, leave int, cs float64) {
+func bUpdate(Bmatrix, indices, cb, as *matrix.Matrix, s, leave int, cs float64) {
 	// Replace column `leave` in Bmatrix with `as` (assuming `as` is a column vector)
 	for i := range Bmatrix.Rows {
 		Bmatrix.Values[i][leave] = as.Values[i][0]

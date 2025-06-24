@@ -1,8 +1,10 @@
-package gspl
+package simplex
 
 import (
 	"math"
 	"testing"
+
+	"github.com/chriso345/gspl/matrix"
 )
 
 const tolerance = 1e-8
@@ -166,11 +168,11 @@ func TestSimplexCases(t *testing.T) {
 			}
 			m := len(test.b)
 			n := len(test.c)
-			A := NewMatrix(m, n)
+			A := matrix.NewMatrix(m, n)
 			A.Values = test.A
-			b := NewMatrix(m, 1)
+			b := matrix.NewMatrix(m, 1)
 			b.Values = test.b
-			c := NewMatrix(n, 1)
+			c := matrix.NewMatrix(n, 1)
 			c.Values = test.c
 
 			z, x, _, finalIndices, exitflag := Simplex(A, b, c, m, n)
