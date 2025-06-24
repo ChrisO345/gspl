@@ -3,38 +3,44 @@ package simplex
 import (
 	"math"
 
-	"github.com/chriso345/gspl/matrix"
+	"github.com/chriso345/gspl/internal/matrix"
+	"gonum.org/v1/gonum/mat"
 )
 
-func Simplex(A, b, c *matrix.Matrix, m, n int) (z float64, x, piValues, indices *matrix.Matrix, exitflag int) {
+func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues, indices *mat.VecDense, exitflag int) {
 	// Create identity matrix I of size m
 	I := matrix.Eye(m)
 
 	// Construct A_phase1 = [A | I]
-	A_phase1 := matrix.NewMatrix(m, n+m)
+	A_phase1 := mat.NewDense(m, n+m, nil)
 	for i := range m {
 		for j := range n {
-			A_phase1.Values[i][j] = A.Values[i][j]
+			A_phase1.Set(i, j, A.At(i, j))
 		}
 		for j := range m {
-			A_phase1.Values[i][n+j] = I.Values[i][j]
+			A_phase1.Set(i, n+j, I.At(i, j))
 		}
 	}
 
 	// Construct c_phase1 = [0's for x vars; 1's for artificial vars]
-	c_phase1 := matrix.NewMatrix(n+m, 1)
-	for i := n; i < n+m; i++ {
-		c_phase1.Values[i][0] = 1.0
+	c_phase1 := mat.NewVecDense(n+m, nil)
+	for i := range n + m {
+		if i < n {
+			c_phase1.SetVec(i, 0.0) // 0 for original variables
+		} else {
+			c_phase1.SetVec(i, 1.0) // 1 for artificial variables
+		}
 	}
 
 	// Initial basic indices: the artificial variables
-	indicesInit := matrix.NewMatrix(m, 1)
+	indicesInit := mat.NewVecDense(m, nil)
 	for i := range m {
-		indicesInit.Values[i][0] = float64(n + i)
+		indicesInit.SetVec(i, float64(n+i)) // Artificial variables indices
 	}
 
 	// Initial B matrix from A_phase1 columns at artificial indices
-	Bmatrix := A_phase1.ExtractColumns(indicesInit)
+	// Bmatrix := A_phase1.ExtractColumns(indicesInit)
+	Bmatrix := matrix.ExtractColumns(A_phase1, indicesInit)
 
 	// Run Phase 1 revised simplex
 	z1, xPhase1, piValues1, indicesPhase1, exitflag1 := RevisedSimplex(A_phase1, b, c_phase1, m, n+m, Bmatrix, indicesInit, 1)
@@ -47,23 +53,24 @@ func Simplex(A, b, c *matrix.Matrix, m, n int) (z float64, x, piValues, indices 
 	finalIndices := indicesPhase1
 
 	// Phase 2: Solve actual problem
-	A_phase2 := matrix.NewMatrix(m, n+m)
+	A_phase2 := mat.NewDense(m, n+m, nil)
 	for i := range m {
+		// TODO: Optimize this into a single loop
 		for j := range n {
-			A_phase2.Values[i][j] = A.Values[i][j]
+			A_phase2.Set(i, j, A.At(i, j))
 		}
 		for j := range m {
-			A_phase2.Values[i][n+j] = I.Values[i][j]
+			A_phase2.Set(i, n+j, I.At(i, j))
 		}
 	}
 
 	// Extend c to include 0s for artificial variables
-	cExtended := matrix.NewMatrix(n+m, 1)
+	cExtended := mat.NewVecDense(n+m, nil)
 	for i := range n {
-		cExtended.Values[i][0] = c.Values[i][0]
+		cExtended.SetVec(i, c.At(i, 0))
 	}
 
-	Bmatrix = A_phase2.ExtractColumns(finalIndices)
+	Bmatrix = matrix.ExtractColumns(A_phase2, finalIndices)
 
 	// Run Phase 2 revised simplex
 	z, x, piValues, indices, exitflag2 := RevisedSimplex(A_phase2, b, cExtended, m, n, Bmatrix, finalIndices, 2)
@@ -77,31 +84,43 @@ func Simplex(A, b, c *matrix.Matrix, m, n int) (z float64, x, piValues, indices 
 	return
 }
 
-func RevisedSimplex(A, b, c *matrix.Matrix, m, n int, Bmatrix, indices_ *matrix.Matrix, phase int) (z float64, x, pivalues, indices *matrix.Matrix, exitflag int) {
+func RevisedSimplex(A *mat.Dense, b, c *mat.VecDense, m, n int, Bmatrix *mat.Dense, indices_ *mat.VecDense, phase int) (z float64, x, pivalues, indices *mat.VecDense, exitflag int) {
 	exitflag = 0
-	x = matrix.NewMatrix(n, 1)
+	x = mat.NewVecDense(n, nil) // Initialize x as a vector of size n
 	B := Bmatrix
 	indices = indices_
 
 	// Calculate the cb vector (cost of basic variables)
-	cb := matrix.NewMatrix(m, 1) // Initialize a column vector for cb (same number of rows as the number of basic variables)
+	cb := mat.NewVecDense(m, nil)
 
 	for i := range m {
-		index := int(indices.Values[i][0])   // Get the index of the basic variable from indices matrix
-		cb.Values[i][0] = c.Values[index][0] // Assign the cost from c based on the index
+		index := int(indices.AtVec(i)) // Get the index of the basic variable from indices vector
+		cb.SetVec(i, c.AtVec(index))   // Assign the cost from c based on the index
 	}
 
 	for {
 
-		xb := B.Inv().Mul(b)
+		xb := mat.NewVecDense(b.Len(), nil)
+		err := xb.SolveVec(Bmatrix, b)
+		if err != nil {
+			exitflag = -1 // Singular matrix or unbounded
+			return
+		}
 
-		pivalues = B.Transpose().Inv().Mul(cb)
+		var BT mat.Dense
+		BT.CloneFrom(B.T()) // B transpose
 
-		isbasic := matrix.NewMatrix(1, n)
+		pivalues = mat.NewVecDense(cb.Len(), nil)
+		err = pivalues.SolveVec(&BT, cb)
+		if err != nil {
+			exitflag = -1 // Singular matrix
+		}
+
+		isbasic := mat.NewVecDense(n, nil) // Initialize isbasic as a row vector of size n
 		for i := range m {
-			index := int(indices.Values[i][0])
+			index := int(indices.AtVec(i)) // Get the index of the basic variable from indices vector
 			if index < n {
-				isbasic.Values[0][index] = 1 // Basic variable
+				isbasic.SetVec(index, 1) // Basic variable
 			}
 		}
 
@@ -109,29 +128,29 @@ func RevisedSimplex(A, b, c *matrix.Matrix, m, n int, Bmatrix, indices_ *matrix.
 
 		if s == -1 {
 			for i := range m {
-				idx := int(indices.Values[i][0])
+				idx := int(indices.AtVec(i)) // Get the index of the basic variable from indices vector
 				if idx < n {
-					x.Values[idx][0] = xb.Values[i][0]
+					x.SetVec(idx, xb.AtVec(i)) // Assign the value from xb to x at index idx
 				}
 			}
 			z = 0
 			for i := range n {
-				z += c.Values[i][0] * x.Values[i][0]
+				z += c.At(i, 0) * x.AtVec(i) // Calculate the objective value
 			}
 			return
 		}
 
-		leave := findLeave(B, as, xb, phase, n, indices)
+		leave := findLeave(B, as, xb, indices, phase, n)
 		if leave == -1 {
 			for i := range m {
-				idx := int(indices.Values[i][0])
+				idx := int(indices.At(i, i)) // Get the index of the basic variable from indices vector
 				if idx < n {
-					x.Values[idx][0] = xb.Values[i][0]
+					x.SetVec(idx, xb.AtVec(i)) // Assign the value from xb to x at index idx
 				}
 			}
 			z = 0
 			for i := range n {
-				z += c.Values[i][0] * x.Values[i][0]
+				z += c.At(i, 0) * x.AtVec(i) // Calculate the objective value
 			}
 			exitflag = -1
 			return
@@ -141,33 +160,42 @@ func RevisedSimplex(A, b, c *matrix.Matrix, m, n int, Bmatrix, indices_ *matrix.
 	}
 }
 
-func findEnter(A, pi, c, isbasic *matrix.Matrix) (as *matrix.Matrix, cs float64, s int) {
+func findEnter(A *mat.Dense, pi, c, isbasic *mat.VecDense) (as *mat.VecDense, cs float64, s int) {
 	s = -1
 	as = nil
 	cs = 0.0
 	minrc := math.Inf(1)
 	tolerance := -1.0e-6
 
-	n := isbasic.Length()
+	n := isbasic.Len()
 
 	for j := range n {
-		if isbasic.Get(0, j) == 0 {
-			aj := &matrix.Matrix{Rows: A.Rows, Columns: 1, Values: make([][]float64, A.Rows)}
-			for i := range A.Rows {
-				aj.Values[i] = []float64{A.Values[i][j]}
+		if isbasic.AtVec(j) == 0 {
+			m, _ := A.Dims()
+			aj := mat.NewVecDense(m, nil)
+			for i := range m {
+				aj.SetVec(i, A.At(i, j))
 			}
-			rc := c.Values[j][0] - matrix.Dot(pi, aj)
+
+			dot := mat.Dot(pi, aj)
+			rc := c.AtVec(j) - dot
+
 			if rc < minrc {
 				minrc = rc
 				s = j
-				as = aj
-				cs = c.Values[j][0]
+				cs = c.AtVec(j)
+
+				as = mat.NewVecDense(m, nil)
+				for i := range m {
+					as.SetVec(i, A.At(i, j))
+				}
 			}
 		}
 	}
 
 	if minrc > tolerance {
-		as = matrix.NewMatrix(A.Rows, 1)
+		m, _ := A.Dims()
+		as = mat.NewVecDense(m, nil) // zero vector column
 		cs = 0.0
 		s = -1
 	}
@@ -175,24 +203,33 @@ func findEnter(A, pi, c, isbasic *matrix.Matrix) (as *matrix.Matrix, cs float64,
 	return as, cs, s
 }
 
-func findLeave(B *matrix.Matrix, as *matrix.Matrix, xb *matrix.Matrix, phase int, n int, indices *matrix.Matrix) (leave int) {
-	leave = -1
-	direction := B.Inv().Mul(as)
+func findLeave(B *mat.Dense, as, xb, indices *mat.VecDense, phase, n int) int {
+	leave := -1
+
+	var Binv mat.Dense
+	if err := Binv.Inverse(B); err != nil {
+		return -1
+	}
+
+	colVec := mat.NewVecDense(as.RawVector().N, mat.Col(nil, 0, as))
+	directionVec := mat.NewVecDense(as.RawVector().N, nil)
+	directionVec.MulVec(&Binv, colVec)
+
+	m := xb.Len()
 	theta := math.Inf(1)
-	m := xb.Rows
 
 	for i := range m {
-		dirVal := direction.Values[i][0]
-		indexVal := int(indices.Values[i][0])
+		dirVal := directionVec.AtVec(i)
+		indexVal := int(indices.AtVec(i))
 
 		if phase == 2 && indexVal > n {
 			if dirVal != 0 {
 				leave = i
-				return
+				return leave
 			}
 		} else {
 			if dirVal > 0 {
-				ratio := xb.Values[i][0] / dirVal
+				ratio := xb.AtVec(i) / dirVal
 				if ratio < theta {
 					theta = ratio
 					leave = i
@@ -200,18 +237,17 @@ func findLeave(B *matrix.Matrix, as *matrix.Matrix, xb *matrix.Matrix, phase int
 			}
 		}
 	}
-	return
+
+	return leave
 }
 
-func bUpdate(Bmatrix, indices, cb, as *matrix.Matrix, s, leave int, cs float64) {
-	// Replace column `leave` in Bmatrix with `as` (assuming `as` is a column vector)
-	for i := range Bmatrix.Rows {
-		Bmatrix.Values[i][leave] = as.Values[i][0]
+func bUpdate(Bmatrix *mat.Dense, indices, cb, as *mat.VecDense, s, leave int, cs float64) {
+	m, _ := Bmatrix.Dims()
+
+	for i := range m {
+		Bmatrix.Set(i, leave, as.AtVec(i))
 	}
 
-	// Update `indices` at the row `leave` with entering variable index `s`
-	indices.Values[leave][0] = float64(s)
-
-	// Update `cb` at the row `leave` with cost `cs`
-	cb.Values[leave][0] = cs
+	indices.SetVec(leave, float64(s))
+	cb.SetVec(leave, cs)
 }

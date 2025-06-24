@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/chriso345/gspl/matrix"
+	"gonum.org/v1/gonum/mat"
 )
 
 const tolerance = 1e-8
@@ -13,16 +13,27 @@ func floatEquals(a, b float64) bool {
 	return math.Abs(a-b) < tolerance
 }
 
-func matrixEquals(a, b [][]float64) bool {
-	if len(a) != len(b) {
+func vectorEquals(vec mat.Vector, slice [][]float64) bool {
+	if vec.Len() != len(slice) {
 		return false
 	}
-	for i := range a {
-		if len(a[i]) != len(b[i]) || math.Abs(a[i][0]-b[i][0]) > tolerance {
+	for i := range vec.Len() {
+		if len(slice[i]) != 1 {
+			return false
+		}
+		if !floatEquals(vec.AtVec(i), slice[i][0]) {
 			return false
 		}
 	}
 	return true
+}
+
+func flattenArray(arr [][]float64) []float64 {
+	flat := make([]float64, 0, len(arr)*len(arr[0]))
+	for _, row := range arr {
+		flat = append(flat, row...)
+	}
+	return flat
 }
 
 func TestSimplexCases(t *testing.T) {
@@ -162,18 +173,15 @@ func TestSimplexCases(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.name != "Medium Sized Problem" {
+			if test.name == "Unbounded" { // FIXME: Error with the unbounded test, currently skipping
 				t.Skip("Skipping test: " + test.name)
 				return
 			}
 			m := len(test.b)
 			n := len(test.c)
-			A := matrix.NewMatrix(m, n)
-			A.Values = test.A
-			b := matrix.NewMatrix(m, 1)
-			b.Values = test.b
-			c := matrix.NewMatrix(n, 1)
-			c.Values = test.c
+			A := mat.NewDense(m, n, flattenArray(test.A))
+			b := mat.NewVecDense(m, flattenArray(test.b))
+			c := mat.NewVecDense(n, flattenArray(test.c))
 
 			z, x, _, finalIndices, exitflag := Simplex(A, b, c, m, n)
 
@@ -183,14 +191,14 @@ func TestSimplexCases(t *testing.T) {
 				t.Logf("%s: z correct", test.name)
 			}
 
-			if !matrixEquals(x.Values, test.expectedX) {
-				t.Errorf("%s Incorrect: Expected x=%+v incorrect: got %+v", test.name, test.expectedX, x.Values)
+			if !vectorEquals(x, test.expectedX) {
+				t.Errorf("%s Incorrect: Expected x=%+v incorrect: got %+v", test.name, test.expectedX, x.RawVector().Data)
 			} else {
 				t.Logf("%s: x correct", test.name)
 			}
 
-			if test.expectedIdx != nil && !matrixEquals(finalIndices.Values, test.expectedIdx) {
-				t.Errorf("%s Incorrect: Expected indices=%+v got %+v", test.name, test.expectedIdx, finalIndices.Values)
+			if test.expectedIdx != nil && !vectorEquals(finalIndices, test.expectedIdx) {
+				t.Errorf("%s Incorrect: Expected indices=%+v got %+v", test.name, test.expectedIdx, finalIndices.RawVector().Data)
 			} else if test.expectedIdx != nil {
 				t.Logf("%s: indices correct", test.name)
 			}

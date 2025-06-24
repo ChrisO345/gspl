@@ -2,9 +2,11 @@ package solver
 
 import (
 	"fmt"
-	"github.com/chriso345/gspl/internal/simplex"
-	"github.com/chriso345/gspl/matrix"
 	"math"
+
+	"github.com/chriso345/gspl/internal/matrix"
+	"github.com/chriso345/gspl/internal/simplex"
+	"gonum.org/v1/gonum/mat"
 )
 
 type LinearProgram struct {
@@ -12,16 +14,16 @@ type LinearProgram struct {
 	Solution float64 // z
 
 	// Matrix Representation
-	Variables     *matrix.Matrix // x
-	ObjectiveFunc *matrix.Matrix // c
-	Constraints   *matrix.Matrix // A
-	RHS           *matrix.Matrix // b
+	Variables     *mat.VecDense // x
+	ObjectiveFunc *mat.VecDense // c
+	Constraints   *mat.Dense    // A
+	RHS           *mat.VecDense // b
 
 	// Simplex Internal Variables
-	indices  *matrix.Matrix
-	pivalues *matrix.Matrix
-	bMatrix  *matrix.Matrix
-	cb       *matrix.Matrix
+	indices  *mat.VecDense // Indices of basic variables
+	pivalues *mat.VecDense // Pivot values
+	bMatrix  *mat.Dense    // Basis matrix
+	cb       *mat.VecDense // Coefficients of the basis variables
 
 	// Others
 	Description      string
@@ -33,6 +35,7 @@ type LinearProgram struct {
 
 // NewLinearProgram Create a new Linear Program
 func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
+
 	lp := LinearProgram{
 		Description:  desc,
 		VariablesMap: make([]string, len(vars)),
@@ -50,7 +53,7 @@ func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 func (lp *LinearProgram) AddObjective(sense LpSense, objective LpExpression) *LinearProgram {
 	lp.Sense = sense
 	// lp.ObjectiveFunction = objective
-	lp.ObjectiveFunc = matrix.NewMatrix(len(objective.Terms), 1)
+	lp.ObjectiveFunc = mat.NewVecDense(len(objective.Terms), nil)
 	for i, v := range objective.Terms {
 		mappedIndex := -1
 		for j, varName := range lp.VariablesMap {
@@ -62,12 +65,12 @@ func (lp *LinearProgram) AddObjective(sense LpSense, objective LpExpression) *Li
 		if mappedIndex == -1 {
 			panic(fmt.Sprintf("Variable %s not found in Linear Program", v.Variable.Name))
 		}
-		lp.ObjectiveFunc.Set(i, 0, v.Coefficient)
+		lp.ObjectiveFunc.SetVec(i, v.Coefficient)
 	}
 
 	if lp.Sense == LpMaximise {
-		for i := range lp.ObjectiveFunc.Values {
-			lp.ObjectiveFunc.Values[i][0] *= -1
+		for i := range lp.ObjectiveFunc.RawVector().N {
+			lp.ObjectiveFunc.SetVec(i, -lp.ObjectiveFunc.At(i, 0))
 		}
 	}
 
@@ -94,12 +97,12 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 
 	currentRow := 0
 	if lp.Constraints == nil {
-		lp.Constraints = matrix.NewMatrix(1, len(lp.VariablesMap))
-		lp.RHS = matrix.NewMatrix(1, 1)
+		lp.Constraints = mat.NewDense(1, len(lp.VariablesMap), nil)
+		lp.RHS = mat.NewVecDense(1, nil)
 	} else {
-		currentRow = lp.Constraints.Rows
-		lp.Constraints.Resize(currentRow+1, len(lp.VariablesMap))
-		lp.RHS.Resize(currentRow+1, 1)
+		currentRow = lp.Constraints.RawMatrix().Rows
+		lp.Constraints = matrix.ResizeMatDense(lp.Constraints, currentRow+1, len(lp.VariablesMap))
+		lp.RHS = matrix.ResizeVecDense(lp.RHS, currentRow+1)
 	}
 
 	newRow := make([]float64, len(lp.VariablesMap))
@@ -118,7 +121,7 @@ func (lp *LinearProgram) AddConstraint(constraint LpExpression, constraintType L
 	}
 
 	lp.Constraints.SetRow(currentRow, newRow)
-	lp.RHS.Set(currentRow, 0, rightHandSide)
+	lp.RHS.SetVec(currentRow, rightHandSide)
 
 	return lp
 }
@@ -129,20 +132,20 @@ func (lp *LinearProgram) Solve() *LinearProgram {
 		if constraintType != LpConstraintEQ {
 			slack := NewVariable(fmt.Sprintf("s%d", i))
 			lp.VariablesMap = append(lp.VariablesMap, slack.Name)
-			unitVector := matrix.NewMatrix(len(lp.Constraints.Values), 1)
+			unitVector := mat.NewDense(lp.Constraints.RawMatrix().Rows, 1, nil)
 			one := 1.0
 			if constraintType == LpConstraintGE {
 				one = -1.0
 			}
 			unitVector.Set(i, 0, one)
-			lp.Constraints = lp.Constraints.ConcatColumn(unitVector)
+			lp.Constraints = matrix.ResizeMatDense(lp.Constraints, lp.Constraints.RawMatrix().Rows, len(lp.VariablesMap))
 
-			lp.ObjectiveFunc.Resize(len(lp.ObjectiveFunc.Values)+1, len(lp.ObjectiveFunc.Values[0]))
-			lp.ObjectiveFunc.Set(len(lp.ObjectiveFunc.Values)-1, len(lp.ObjectiveFunc.Values[0])-1, 0)
+			lp.ObjectiveFunc = matrix.ResizeVecDense(lp.ObjectiveFunc, lp.ObjectiveFunc.RawVector().N+1)
+			lp.ObjectiveFunc.SetVec(lp.ObjectiveFunc.RawVector().N-1, 0)
 		}
 	}
 
-	m := len(lp.Constraints.Values)
+	m := lp.Constraints.RawMatrix().Rows
 	n := len(lp.VariablesMap)
 
 	z, x, _, idx, flag := simplex.Simplex(lp.Constraints, lp.RHS, lp.ObjectiveFunc, m, n)
@@ -172,7 +175,7 @@ func (lp *LinearProgram) PrintSolution() {
 	fmt.Println(lp.Solution)
 
 	for i, v := range lp.VariablesMap {
-		fmt.Printf("%s: %f\n", v, lp.Variables.Get(i, 0))
+		fmt.Printf("%s: %f\n", v, lp.Variables.At(i, 0))
 	}
 }
 
@@ -270,19 +273,30 @@ func (lp *LinearProgram) String() string {
 	stringBuilder += "\n"
 
 	stringBuilder += "Objective: "
-	stringBuilder += lp.ObjectiveFunc.String()
+	for i, v := range lp.ObjectiveFunc.RawVector().Data {
+		if v != 0 {
+			if i > 0 && v > 0 {
+				stringBuilder += " + "
+			} else if v < 0 {
+				stringBuilder += " - "
+			}
+			stringBuilder += fmt.Sprintf("%f * %s", math.Abs(v), lp.VariablesMap[i])
+		}
+	}
 
 	stringBuilder += "\n"
 
 	stringBuilder += "Constraints: \n"
-	for i, v := range lp.Constraints.Values {
+	for i, val := range lp.Constraints.RawMatrix().Data {
 		stringBuilder += fmt.Sprintf("C%d: ", i)
-		for j, val := range v {
-			if val != 0 {
-				stringBuilder += fmt.Sprintf("%f * %s + ", val, lp.VariablesMap[j])
+		if val != 0 {
+			if i > 0 && val > 0 {
+				stringBuilder += " + "
+			} else if val < 0 {
+				stringBuilder += " - "
 			}
+			stringBuilder += fmt.Sprintf("%f * %s", math.Abs(val), lp.VariablesMap[i])
 		}
-		stringBuilder += fmt.Sprintf("= %f\n", lp.RHS.Values[i][0])
 	}
 
 	return stringBuilder
