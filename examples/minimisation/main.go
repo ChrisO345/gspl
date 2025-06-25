@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/chriso345/gspl/lp"
 	"github.com/chriso345/gspl/solver"
 )
 
@@ -10,52 +11,53 @@ func main() {
 	// Constraints: 1 * x1 - 1 * x2 - 2 * x3 <= -14
 	// Constraints: 3 * x1 + 2 * x2 + 2 * x3 = 26
 
-	variables := []solver.LpVariable{
-		solver.NewVariable("x1"),
-		solver.NewVariable("x2"),
-		solver.NewVariable("x3"),
-		solver.NewVariable("x4"),
-		solver.NewVariable("x5"),
+	variables := []lp.LpVariable{
+		lp.NewVariable("x1"),
+		lp.NewVariable("x2"),
+		lp.NewVariable("x3"),
+		lp.NewVariable("x4"),
+		lp.NewVariable("x5"),
 	}
 
-	terms := []solver.LpTerm{
-		solver.NewTerm(15, variables[0]),
-		solver.NewTerm(10, variables[1]),
-		solver.NewTerm(-10, variables[2]),
-		solver.NewTerm(1, variables[3]),
-		solver.NewTerm(2, variables[4]),
+	terms := []lp.LpTerm{
+		lp.NewTerm(15, variables[0]),
+		lp.NewTerm(10, variables[1]),
+		lp.NewTerm(-10, variables[2]),
+		lp.NewTerm(1, variables[3]),
+		lp.NewTerm(2, variables[4]),
 	}
-	objective := solver.NewExpression(terms)
+	objective := lp.NewExpression(terms)
 
-	terms2 := []solver.LpTerm{
-		solver.NewTerm(-1, variables[0]),
-		solver.NewTerm(-1, variables[1]),
-		solver.NewTerm(-1, variables[2]),
-		solver.NewTerm(-1, variables[3]),
-		solver.NewTerm(0, variables[4]),
-	}
-
-	terms3 := []solver.LpTerm{
-		solver.NewTerm(0, variables[0]),
-		solver.NewTerm(1, variables[1]),
-		solver.NewTerm(0, variables[2]),
-		solver.NewTerm(1, variables[3]),
-		solver.NewTerm(-1, variables[4]),
+	terms2 := []lp.LpTerm{
+		lp.NewTerm(-1, variables[0]),
+		lp.NewTerm(-1, variables[1]),
+		lp.NewTerm(-1, variables[2]),
+		lp.NewTerm(-1, variables[3]),
+		lp.NewTerm(0, variables[4]),
 	}
 
-	terms4 := []solver.LpTerm{
-		solver.NewTerm(-1, variables[0]),
-		solver.NewTerm(0, variables[1]),
-		solver.NewTerm(-1, variables[2]),
-		solver.NewTerm(0, variables[3]),
-		solver.NewTerm(-1, variables[4]),
+	terms3 := []lp.LpTerm{
+		lp.NewTerm(0, variables[0]),
+		lp.NewTerm(1, variables[1]),
+		lp.NewTerm(0, variables[2]),
+		lp.NewTerm(1, variables[3]),
+		lp.NewTerm(-1, variables[4]),
 	}
 
-	lp := solver.NewLinearProgram("Minimisation Example", variables)
-	lp.AddObjective(solver.LpMaximise, objective).
-		AddConstraint(solver.NewExpression(terms2), solver.LpConstraintLE, -4).
-		AddConstraint(solver.NewExpression(terms3), solver.LpConstraintLE, -4).
-		AddConstraint(solver.NewExpression(terms4), solver.LpConstraintLE, -8)
+	terms4 := []lp.LpTerm{
+		lp.NewTerm(-1, variables[0]),
+		lp.NewTerm(0, variables[1]),
+		lp.NewTerm(-1, variables[2]),
+		lp.NewTerm(0, variables[3]),
+		lp.NewTerm(-1, variables[4]),
+	}
 
-	lp.Solve().PrintSolution()
+	minProg := lp.NewLinearProgram("Minimisation Example", variables)
+	solver.AddObjective(&minProg, lp.LpMaximise, objective)
+	solver.AddConstraint(&minProg, lp.NewExpression(terms2), lp.LpConstraintLE, -4)
+	solver.AddConstraint(&minProg, lp.NewExpression(terms3), lp.LpConstraintLE, -4)
+	solver.AddConstraint(&minProg, lp.NewExpression(terms4), lp.LpConstraintLE, -8)
+
+	solver.Solve(&minProg)
+	minProg.PrintSolution()
 }
