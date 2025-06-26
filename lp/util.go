@@ -5,6 +5,7 @@ import (
 	"math"
 )
 
+// String returns a string representation of the LinearProgram
 func (lp *LinearProgram) String() string {
 	stringBuilder := lp.Description
 	stringBuilder += "\n"
@@ -46,6 +47,7 @@ func (lp *LinearProgram) String() string {
 	return stringBuilder
 }
 
+// PrintSolution prints the solution of the linear program in a human-readable format.
 func (lp *LinearProgram) PrintSolution() {
 	fmt.Println(lp.Status.String())
 	fmt.Println(lp.Solution)

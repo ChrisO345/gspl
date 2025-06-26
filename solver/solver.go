@@ -9,19 +9,14 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-func Solve(prog *lp.LinearProgram, config ...SolverOption) *lp.LinearProgram {
-	var opts SolverOption
-	if len(config) == 0 {
-		opts = DefaultSolverOption()
-	} else {
-		opts = config[0]
-		opts.fillDefaults()
-	}
+// Solve takes a linear program and an optional configuration, and attempts to solve it using the revised simplex method.
+func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
+	// Build the full solver config by applying defaults and options
+	config := NewSolverConfig(opts...)
 
-	// Validate the solver options
-	err := opts.validateSolverOption()
-	if err != nil {
-		panic(fmt.Sprintf("Invalid Linear Program: %s", err.Error()))
+	// Validate config — implement validation method on solverConfig if needed
+	if err := validateSolverConfig(config); err != nil {
+		panic(fmt.Sprintf("Invalid solver configuration: %s", err.Error()))
 	}
 
 	// Add slacks for non-equality constraints

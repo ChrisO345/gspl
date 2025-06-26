@@ -2,6 +2,7 @@ package lp
 
 import "gonum.org/v1/gonum/mat"
 
+// LinearProgram represents a linear programming problem in standard form.
 type LinearProgram struct {
 	// Solution
 	Solution float64 // z

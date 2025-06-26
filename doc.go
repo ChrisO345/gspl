@@ -1,6 +1,7 @@
-// Package gspl provides tools for solving linear programming (LP) problems
-// using the revised simplex method.
+// Package gspl provides a minimal and composable API for solving
+// linear programming (LP) problems using the revised simplex method.
 //
-// The API is designed to be minimal, composable, and extendable to other
-// optimization models such as integer programming and network flows.
+// It is designed with extensibility in mind, allowing for future support
+// of additional optimization models such as integer programming and
+// network flow problems.
 package gspl

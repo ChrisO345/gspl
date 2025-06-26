@@ -152,9 +152,9 @@ lp.AddConstraint(lp.NewExpression([]lp.LpTerm{
 
 Constraint types:
 
-* `gspl.LpConstraintLE` – less than or equal
-* `gspl.LpConstraintGE` – greater than or equal
-* `gspl.LpConstraintEQ` – equality
+* `gspl.LpConstraintLE` - less than or equal
+* `gspl.LpConstraintGE` - greater than or equal
+* `gspl.LpConstraintEQ` - equality
 
 ### Solving
 

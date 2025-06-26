@@ -1,93 +1,56 @@
 package solver
 
-// TODO: TimeLimit, MaxIterations for LP solvers, IP Solvers need to be implemented first.
-type SolverOption struct {
-	Tolerance *float64
-	// TimeLimit     *time.Duration // Time limit for the solver, 0 means no limit
-	MaxIterations *int // Max number of iterations to perform, <= 0 means no limit, used to prevent possible cycling or stalling
+// solverConfig holds the actual configuration with no pointers.
+type solverConfig struct {
+	// TimeLimit        // TODO: Add time.Duration field later
+	Tolerance     float64
+	MaxIterations int
 
-	// IP/MIP specific options, will be ignored for LP formulations
-	GapSensitivity       *float64           // Gives the minimum gap between the best integer solution and the best bound, 0-1
-	UseCuttingPlanes     *bool              // Whether to use cutting planes in the solver
-	BranchingStrategy    *BranchingStrategy // e.g., "first-fractional", "most-infeasible"
-	HeuristicStrategy    *HeuristicStrategy // e.g., "random", "largest-infeasibility, "none",
-	StrongBranchingDepth *int               // Number of strong branching iterations to perform >= 0
-	Threads              *int               // Max number of goroutines to spawn, error on negative values, 0 means use all available cores, 1 is single-threaded
+	GapSensitivity       float64
+	UseCuttingPlanes     bool
+	BranchingStrategy    BranchingStrategy
+	HeuristicStrategy    HeuristicStrategy
+	StrongBranchingDepth int
+	Threads              int
 
-	RandomSeed   *int
-	SolverMethod *SolverMethod // Method to use for solving, only simplex for now
+	RandomSeed   int
+	SolverMethod SolverMethod
 }
 
-func DefaultSolverOption() SolverOption {
-	return SolverOption{
-		Tolerance: ptr(1e-6),
-		// TimeLimit:     0,      // No time limit
-		MaxIterations: ptr(1000), // No iteration limit
-
-		GapSensitivity:       ptr(0.05), // Default gap sensitivity for MIP
-		UseCuttingPlanes:     ptr(false),
-		BranchingStrategy:    ptr(FirstFractional), // Default branching strategy
-		HeuristicStrategy:    ptr(RandomHeuristic), // Default heuristic strategy
-		StrongBranchingDepth: ptr(0),               // No strong branching by default
-		Threads:              ptr(0),               // Use all available cores
-
-		RandomSeed:   ptr(42),            // Default random seed
-		SolverMethod: ptr(SimplexMethod), // Default solver method
+// DefaultSolverConfig returns the default solver configuration.
+func DefaultSolverConfig() *solverConfig {
+	return &solverConfig{
+		Tolerance:            1e-6,
+		MaxIterations:        1000,
+		GapSensitivity:       0.05,
+		UseCuttingPlanes:     false,
+		BranchingStrategy:    FirstFractional,
+		HeuristicStrategy:    RandomHeuristic,
+		StrongBranchingDepth: 0,
+		Threads:              0, // 0 means use all available cores
+		RandomSeed:           42,
+		SolverMethod:         SimplexMethod,
 	}
 }
 
-func (opts *SolverOption) fillDefaults() {
-	defaults := DefaultSolverOption()
-	if opts == nil {
-		opts = &defaults
-		return
-	}
-
-	if opts.Tolerance == nil {
-		opts.Tolerance = defaults.Tolerance
-	}
-	if opts.MaxIterations == nil {
-		opts.MaxIterations = defaults.MaxIterations
-	}
-	if opts.GapSensitivity == nil {
-		opts.GapSensitivity = defaults.GapSensitivity
-	}
-	if opts.UseCuttingPlanes == nil {
-		opts.UseCuttingPlanes = defaults.UseCuttingPlanes
-	}
-	if opts.BranchingStrategy == nil {
-		opts.BranchingStrategy = defaults.BranchingStrategy
-	}
-	if opts.HeuristicStrategy == nil {
-		opts.HeuristicStrategy = defaults.HeuristicStrategy
-	}
-	if opts.StrongBranchingDepth == nil {
-		opts.StrongBranchingDepth = defaults.StrongBranchingDepth
-	}
-	if opts.Threads == nil {
-		opts.Threads = defaults.Threads
-	}
-	if opts.RandomSeed == nil {
-		opts.RandomSeed = defaults.RandomSeed
-	}
-	if opts.SolverMethod == nil {
-		opts.SolverMethod = defaults.SolverMethod
-	}
-}
-
-func (opts SolverOption) validateSolverOption() error {
+// validateSolverConfig checks if the solverConfig is valid.
+func validateSolverConfig(cfg *solverConfig) error {
+	// TODO: Impement validation logic
+	_ = cfg
 	return nil
 }
 
+// BranchingStrategy represents the strategy used for branching in integer programming.
 type BranchingStrategy string
 
-const ( // TODO: Add more branching strategies, requires IP solver implementation
+const (
 	FirstFractional BranchingStrategy = "first-fractional"
 	MostFractional  BranchingStrategy = "most-fractional"
 	LeastFractional BranchingStrategy = "least-fractional"
 	RandomBranching BranchingStrategy = "random-branching"
 )
 
+// HeuristicStrategy represents the strategy used for heuristics in integer programming.
 type HeuristicStrategy string
 
 const (
@@ -95,8 +58,91 @@ const (
 	LargestInfeasibility HeuristicStrategy = "largest-infeasibility"
 )
 
+// SolverMethod represents the method used for solving linear programming problems.
 type SolverMethod string
 
 const (
-	SimplexMethod SolverMethod = "simplex"
+	SimplexMethod SolverMethod = "simplex" // Currently the only option is the simplex method
 )
+
+// SolverOption defines a function that modifies solverConfig.
+type SolverOption func(*solverConfig)
+
+// WithTolerance sets the tolerance.
+func WithTolerance(t float64) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.Tolerance = t
+	}
+}
+
+// WithMaxIterations sets the maximum number of iterations.
+func WithMaxIterations(max int) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.MaxIterations = max
+	}
+}
+
+// WithGapSensitivity sets the gap sensitivity.
+func WithGapSensitivity(gap float64) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.GapSensitivity = gap
+	}
+}
+
+// WithUseCuttingPlanes enables or disables cutting planes.
+func WithUseCuttingPlanes(enabled bool) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.UseCuttingPlanes = enabled
+	}
+}
+
+// WithBranchingStrategy sets the branching strategy.
+func WithBranchingStrategy(bs BranchingStrategy) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.BranchingStrategy = bs
+	}
+}
+
+// WithHeuristicStrategy sets the heuristic strategy.
+func WithHeuristicStrategy(hs HeuristicStrategy) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.HeuristicStrategy = hs
+	}
+}
+
+// WithStrongBranchingDepth sets the strong branching depth.
+func WithStrongBranchingDepth(depth int) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.StrongBranchingDepth = depth
+	}
+}
+
+// WithThreads sets the number of threads to use.
+func WithThreads(n int) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.Threads = n
+	}
+}
+
+// WithRandomSeed sets the random seed.
+func WithRandomSeed(seed int) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.RandomSeed = seed
+	}
+}
+
+// WithSolverMethod sets the solver method.
+func WithSolverMethod(m SolverMethod) SolverOption {
+	return func(cfg *solverConfig) {
+		cfg.SolverMethod = m
+	}
+}
+
+// NewSolverConfig builds a solverConfig applying all options on defaults.
+func NewSolverConfig(opts ...SolverOption) *solverConfig {
+	cfg := DefaultSolverConfig()
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return cfg
+}

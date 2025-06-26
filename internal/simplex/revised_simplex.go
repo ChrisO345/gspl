@@ -7,6 +7,9 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// Simplex solves the LP problem using the standard simplex method.
+//
+// It calls RevisedSimplex for both phase 1 and phase 2 internally.
 func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues, indices *mat.VecDense, exitflag int) {
 	// Create identity matrix I of size m
 	I := matrix.Eye(m)
@@ -84,6 +87,10 @@ func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues
 	return
 }
 
+// RevisedSimplex implements the revised simplex algorithm.
+//
+// It solves the LP in the specified phase (1 or 2) given an initial basis.
+// Returns optimal objective, solution, duals, basis indices, and exit flag.
 func RevisedSimplex(A *mat.Dense, b, c *mat.VecDense, m, n int, Bmatrix *mat.Dense, indices_ *mat.VecDense, phase int) (z float64, x, pivalues, indices *mat.VecDense, exitflag int) {
 	exitflag = 0
 	x = mat.NewVecDense(n, nil) // Initialize x as a vector of size n
@@ -160,6 +167,7 @@ func RevisedSimplex(A *mat.Dense, b, c *mat.VecDense, m, n int, Bmatrix *mat.Den
 	}
 }
 
+// findEnter identifies the entering variable in the revised simplex method.
 func findEnter(A *mat.Dense, pi, c, isbasic *mat.VecDense) (as *mat.VecDense, cs float64, s int) {
 	s = -1
 	as = nil
@@ -203,6 +211,7 @@ func findEnter(A *mat.Dense, pi, c, isbasic *mat.VecDense) (as *mat.VecDense, cs
 	return as, cs, s
 }
 
+// findLeave identifies the leaving variable in the revised simplex method.
 func findLeave(B *mat.Dense, as, xb, indices *mat.VecDense, phase, n int) int {
 	leave := -1
 
@@ -241,6 +250,7 @@ func findLeave(B *mat.Dense, as, xb, indices *mat.VecDense, phase, n int) int {
 	return leave
 }
 
+// bUpdate updates the B matrix, indices, cb, and as vectors during the revised simplex method.
 func bUpdate(Bmatrix *mat.Dense, indices, cb, as *mat.VecDense, s, leave int, cs float64) {
 	m, _ := Bmatrix.Dims()
 
