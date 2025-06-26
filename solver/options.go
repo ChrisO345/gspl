@@ -75,7 +75,7 @@ func (opts *SolverOption) fillDefaults() {
 	}
 }
 
-func (opts SolverOption) validateSolverOptions() error {
+func (opts SolverOption) validateSolverOption() error {
 	return nil
 }
 

@@ -53,10 +53,10 @@ func main() {
 	}
 
 	minProg := lp.NewLinearProgram("Minimisation Example", variables)
-	solver.AddObjective(&minProg, lp.LpMaximise, objective)
-	solver.AddConstraint(&minProg, lp.NewExpression(terms2), lp.LpConstraintLE, -4)
-	solver.AddConstraint(&minProg, lp.NewExpression(terms3), lp.LpConstraintLE, -4)
-	solver.AddConstraint(&minProg, lp.NewExpression(terms4), lp.LpConstraintLE, -8)
+	minProg.AddObjective(lp.LpMaximise, objective)
+	minProg.AddConstraint(lp.NewExpression(terms2), lp.LpConstraintLE, -4)
+	minProg.AddConstraint(lp.NewExpression(terms3), lp.LpConstraintLE, -4)
+	minProg.AddConstraint(lp.NewExpression(terms4), lp.LpConstraintLE, -8)
 
 	solver.Solve(&minProg)
 	minProg.PrintSolution()

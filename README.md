@@ -32,52 +32,55 @@ Here's how to define and solve a basic linear programming problem with **gspl**:
 ```go
 package main
 
-import "github.com/chriso345/gspl"
+import (
+	"github.com/chriso345/gspl/lp"
+	"github.com/chriso345/gspl/solver"
+)
 
 func main() {
-    // Create decision variables
-    variables := []gspl.LpVariable{
-        gspl.NewVariable("x1"),
-        gspl.NewVariable("x2"),
-        gspl.NewVariable("x3"),
-    }
+	// Create decision variables
+	variables := []lp.LpVariable{
+		lp.NewVariable("x1"),
+		lp.NewVariable("x2"),
+		lp.NewVariable("x3"),
+	}
 
-    x1 := &variables[0]
-    x2 := &variables[1]
-    x3 := &variables[2]
+	x1 := &variables[0]
+	x2 := &variables[1]
+	x3 := &variables[2]
 
-    // Objective: Minimize -6*x1 + 7*x2 + 4*x3
-    objective := gspl.NewExpression([]gspl.LpTerm{
-        gspl.NewTerm(-6, *x1),
-        gspl.NewTerm(7, *x2),
-        gspl.NewTerm(4, *x3),
-    })
+	// Objective function: Minimize -6 * x1 + 7 * x2 + 4 * x3
+	objective := lp.NewExpression([]lp.LpTerm{
+		lp.NewTerm(-6, *x1),
+		lp.NewTerm(7, *x2),
+		lp.NewTerm(4, *x3),
+	})
 
-    // Initialize the LP with a name and variables
-    lp := gspl.NewLinearProgram("Minimisation Example", variables)
-    lp.AddObjective(gspl.LpMinimise, objective)
+	// Set up the LP problem
+	example := lp.NewLinearProgram("README Example", variables)
+	example.AddObjective(lp.LpMinimise, objective)
 
-    // Add constraints
-    lp.AddConstraint(gspl.NewExpression([]gspl.LpTerm{
-        gspl.NewTerm(2, *x1),
-        gspl.NewTerm(5, *x2),
-        gspl.NewTerm(-1, *x3),
-    }), gspl.LpConstraintLE, 18)
+	// Add constraints
+	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
+		lp.NewTerm(2, *x1),
+		lp.NewTerm(5, *x2),
+		lp.NewTerm(-1, *x3),
+	}), lp.LpConstraintLE, 18)
 
-    lp.AddConstraint(gspl.NewExpression([]gspl.LpTerm{
-        gspl.NewTerm(1, *x1),
-        gspl.NewTerm(-1, *x2),
-        gspl.NewTerm(-2, *x3),
-    }), gspl.LpConstraintLE, -14)
+	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
+		lp.NewTerm(1, *x1),
+		lp.NewTerm(-1, *x2),
+		lp.NewTerm(-2, *x3),
+	}), lp.LpConstraintLE, -14)
 
-    lp.AddConstraint(gspl.NewExpression([]gspl.LpTerm{
-        gspl.NewTerm(3, *x1),
-        gspl.NewTerm(2, *x2),
-        gspl.NewTerm(2, *x3),
-    }), gspl.LpConstraintEQ, 26)
+	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
+		lp.NewTerm(3, *x1),
+		lp.NewTerm(2, *x2),
+		lp.NewTerm(2, *x3),
+	}), lp.LpConstraintEQ, 26)
 
-    // Solve the problem and print the solution
-    lp.Solve().PrintSolution()
+	// Solve it
+	solver.Solve(&example).PrintSolution()
 }
 ```
 
@@ -106,9 +109,9 @@ See the [examples](examples) directory for other scenarios.
 Create decision variables as a slice:
 
 ```go
-variables := []gspl.LpVariable{
-    gspl.NewVariable("x1"),
-    gspl.NewVariable("x2"),
+variables := []lp.LpVariable{
+    lp.NewVariable("x1"),
+    lp.NewVariable("x2"),
 }
 ```
 
@@ -123,17 +126,17 @@ x1 := &variables[0]
 Build the objective using terms:
 
 ```go
-objective := gspl.NewExpression([]gspl.LpTerm{
-    gspl.NewTerm(5, *x1),
-    gspl.NewTerm(3, *x2),
+objective := lp.NewExpression([]lp.LpTerm{
+    lp.NewTerm(5, *x1),
+    lp.NewTerm(3, *x2),
 })
 ```
 
 Add it to the LP:
 
 ```go
-lp := gspl.NewLinearProgram("My LP", variables)
-lp.AddObjective(gspl.LpMaximise, objective)
+lp := lp.NewLinearProgram("My LP", variables)
+lp.AddObjective(lp.LpMaximise, objective)
 ```
 
 ### Constraints
@@ -141,10 +144,10 @@ lp.AddObjective(gspl.LpMaximise, objective)
 Each constraint uses an expression, a comparison type, and a right-hand side:
 
 ```go
-lp.AddConstraint(gspl.NewExpression([]gspl.LpTerm{
-    gspl.NewTerm(2, *x1),
-    gspl.NewTerm(3, *x2),
-}), gspl.LpConstraintLE, 10)
+lp.AddConstraint(lp.NewExpression([]lp.LpTerm{
+    lp.NewTerm(2, *x1),
+    lp.NewTerm(3, *x2),
+}), lp.LpConstraintLE, 10)
 ```
 
 Constraint types:
@@ -156,7 +159,7 @@ Constraint types:
 ### Solving
 
 ```go
-solution := lp.Solve()
+solution := solver.Solve(&lp)
 solution.PrintSolution()
 ```
 

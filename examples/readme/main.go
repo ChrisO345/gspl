@@ -26,22 +26,22 @@ func main() {
 
 	// Set up the LP problem
 	example := lp.NewLinearProgram("README Example", variables)
-	solver.AddObjective(&example, lp.LpMinimise, objective)
+	example.AddObjective(lp.LpMinimise, objective)
 
 	// Add constraints
-	solver.AddConstraint(&example, lp.NewExpression([]lp.LpTerm{
+	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
 		lp.NewTerm(2, *x1),
 		lp.NewTerm(5, *x2),
 		lp.NewTerm(-1, *x3),
 	}), lp.LpConstraintLE, 18)
 
-	solver.AddConstraint(&example, lp.NewExpression([]lp.LpTerm{
+	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
 		lp.NewTerm(1, *x1),
 		lp.NewTerm(-1, *x2),
 		lp.NewTerm(-2, *x3),
 	}), lp.LpConstraintLE, -14)
 
-	solver.AddConstraint(&example, lp.NewExpression([]lp.LpTerm{
+	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
 		lp.NewTerm(3, *x1),
 		lp.NewTerm(2, *x2),
 		lp.NewTerm(2, *x3),
