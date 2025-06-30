@@ -3,6 +3,7 @@ package lp_test
 import (
 	"testing"
 
+	"github.com/chriso345/gspl/internal/assert"
 	"github.com/chriso345/gspl/lp"
 	"gonum.org/v1/gonum/mat"
 )
@@ -24,16 +25,12 @@ func TestAddObjective_SetsObjectiveFunc(t *testing.T) {
 
 	prog.AddObjective(lp.LpMinimise, obj)
 
-	if prog.ObjectiveFunc.Len() != 3 {
-		t.Fatalf("Expected ObjectiveFunc length 3, got %d", prog.ObjectiveFunc.Len())
-	}
+	assert.AssertEqual(t, prog.ObjectiveFunc.Len(), 3)
 
 	expected := []float64{1, 2, 3}
 	for i := range 3 {
 		got := prog.ObjectiveFunc.AtVec(i)
-		if got != expected[i] {
-			t.Errorf("ObjectiveFunc at %d: got %f, want %f", i, got, expected[i])
-		}
+		assert.AssertEqual(t, got, expected[i])
 	}
 }
 
@@ -51,26 +48,20 @@ func TestAddObjective_Maximise_NegatesObjective(t *testing.T) {
 	expected := []float64{-1.5, 2.5, 0}
 	for i := range 3 {
 		got := prog.ObjectiveFunc.AtVec(i)
-		if got != expected[i] {
-			t.Errorf("ObjectiveFunc at %d: got %f, want %f", i, got, expected[i])
-		}
+		assert.AssertEqual(t, got, expected[i])
 	}
 }
 
 func TestAddObjective_UnknownVariable_Panics(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Expected panic for unknown variable, but did not panic")
-		}
-	}()
-
 	prog := makeSimpleLP()
 
 	obj := lp.NewExpression([]lp.LpTerm{
 		lp.NewTerm(1, lp.NewVariable("unknown")),
 	})
 
-	prog.AddObjective(lp.LpMinimise, obj)
+	assert.AssertPanic(t, func() {
+		prog.AddObjective(lp.LpMinimise, obj)
+	})
 }
 
 func TestAddConstraint_AppendsConstraint(t *testing.T) {
@@ -89,22 +80,15 @@ func TestAddConstraint_AppendsConstraint(t *testing.T) {
 
 	prog.AddConstraint(constraint, lp.LpConstraintLE, 10)
 
-	if len(prog.ConstraintVector) != 1 {
-		t.Fatalf("Expected ConstraintVector length 1, got %d", len(prog.ConstraintVector))
-	}
+	assert.AssertEqual(t, len(prog.ConstraintVector), 1)
 
 	gotRow := mat.Row(nil, 0, prog.Constraints)
 	expectedRow := []float64{1, 0, 2}
 	for i, val := range expectedRow {
-		if gotRow[i] != val {
-			t.Errorf("Constraint matrix row[%d]: got %f, want %f", i, gotRow[i], val)
-		}
+		assert.AssertEqual(t, gotRow[i], val)
 	}
 
-	gotRHS := prog.RHS.AtVec(0)
-	if gotRHS != 10 {
-		t.Errorf("RHS[0]: got %f, want 10", gotRHS)
-	}
+	assert.AssertEqual(t, prog.RHS.AtVec(0), 10.0)
 }
 
 func TestAddConstraint_NegativeRHS_FlipsConstraint(t *testing.T) {
@@ -126,33 +110,22 @@ func TestAddConstraint_NegativeRHS_FlipsConstraint(t *testing.T) {
 	gotRow := mat.Row(nil, 0, prog.Constraints)
 	expectedRow := []float64{-1, 1, 0}
 	for i, val := range expectedRow {
-		if gotRow[i] != val {
-			t.Errorf("Constraint matrix row[%d]: got %f, want %f", i, gotRow[i], val)
-		}
+		assert.AssertEqual(t, val, gotRow[i])
 	}
 
-	gotRHS := prog.RHS.AtVec(0)
-	if gotRHS != 5 {
-		t.Errorf("RHS[0]: got %f, want 5", gotRHS)
-	}
+	assert.AssertEqual(t, prog.RHS.AtVec(0), 5.0)
 
-	if prog.ConstraintVector[0] != -lp.LpConstraintGE {
-		t.Errorf("ConstraintVector[0]: got %v, want %v", prog.ConstraintVector[0], -lp.LpConstraintGE)
-	}
+	assert.AssertEqual(t, prog.ConstraintVector[0], -lp.LpConstraintGE)
 }
 
 func TestAddConstraint_WithoutObjective_Panics(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Expected panic when adding constraint without objective set")
-		}
-	}()
-
 	prog := makeSimpleLP()
 
 	constraint := lp.NewExpression([]lp.LpTerm{
 		lp.NewTerm(1, lp.NewVariable("x")),
 	})
 
-	prog.AddConstraint(constraint, lp.LpConstraintLE, 10)
+	assert.AssertPanic(t, func() {
+		prog.AddConstraint(constraint, lp.LpConstraintLE, 10)
+	})
 }

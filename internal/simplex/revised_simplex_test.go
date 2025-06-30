@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/chriso345/gspl/internal/assert"
 	"github.com/chriso345/gspl/internal/simplex"
 	"gonum.org/v1/gonum/mat"
 )
@@ -186,29 +187,17 @@ func TestSimplexCases(t *testing.T) {
 
 			z, x, _, finalIndices, exitflag := simplex.Simplex(A, b, c, m, n)
 
-			if !floatEquals(z, test.expectedZ) {
-				t.Errorf("%s Incorrect: Expected z=%.2f, Got %.6f", test.name, test.expectedZ, z)
-			} else {
-				t.Logf("%s: z correct", test.name)
-			}
+			assert.AssertIsClose(t, z, test.expectedZ, tolerance)
 
 			if !vectorEquals(x, test.expectedX) {
 				t.Errorf("%s Incorrect: Expected x=%+v incorrect: got %+v", test.name, test.expectedX, x.RawVector().Data)
-			} else {
-				t.Logf("%s: x correct", test.name)
 			}
 
 			if test.expectedIdx != nil && !vectorEquals(finalIndices, test.expectedIdx) {
 				t.Errorf("%s Incorrect: Expected indices=%+v got %+v", test.name, test.expectedIdx, finalIndices.RawVector().Data)
-			} else if test.expectedIdx != nil {
-				t.Logf("%s: indices correct", test.name)
 			}
 
-			if exitflag != test.expectedExit {
-				t.Errorf("%s Incorrect: Expected exitflag=%d, Got %d", test.name, test.expectedExit, exitflag)
-			} else {
-				t.Logf("%s: exitflag correct", test.name)
-			}
+			assert.AssertEqual(t, exitflag, test.expectedExit)
 		})
 	}
 }
