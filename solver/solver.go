@@ -3,19 +3,37 @@ package solver
 import (
 	"fmt"
 
+	"github.com/chriso345/gspl/internal/common"
 	"github.com/chriso345/gspl/internal/matrix"
 	"github.com/chriso345/gspl/internal/simplex"
 	"github.com/chriso345/gspl/lp"
 	"gonum.org/v1/gonum/mat"
 )
 
+type (
+	SolverMethod      = common.SolverMethod
+	BranchingStrategy = common.BranchingStrategy
+	HeuristicStrategy = common.HeuristicStrategy
+)
+
+// Re-export constants
+const (
+	SimplexMethod        SolverMethod      = common.SimplexMethod
+	FirstFractional      BranchingStrategy = common.FirstFractional
+	MostFractional       BranchingStrategy = common.MostFractional
+	LeastFractional      BranchingStrategy = common.LeastFractional
+	RandomBranching      BranchingStrategy = common.RandomBranching
+	RandomHeuristic      HeuristicStrategy = common.RandomHeuristic
+	LargestInfeasibility HeuristicStrategy = common.LargestInfeasibility
+)
+
 // Solve takes a linear program and an optional configuration, and attempts to solve it using the revised simplex method.
 func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
-	// Build the full solver config by applying defaults and options
+	// Build the full solver options by applying defaults and options
 	config := NewSolverConfig(opts...)
 
 	// Validate config — implement validation method on solverConfig if needed
-	if err := validateSolverConfig(config); err != nil {
+	if err := common.ValidateSolverConfig(config); err != nil {
 		panic(fmt.Sprintf("Invalid solver configuration: %s", err.Error()))
 	}
 

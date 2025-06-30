@@ -74,8 +74,8 @@ var LpStatusMap = map[LpStatus]string{
 }
 
 // String returns the string representation of the LpStatus.
-func (s *LpStatus) String() string {
-	return LpStatusMap[*s]
+func (s LpStatus) String() string {
+	return LpStatusMap[s]
 }
 
 // LpConstraintType represents the type of a constraint in a linear programming problem.

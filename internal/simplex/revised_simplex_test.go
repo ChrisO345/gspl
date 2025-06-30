@@ -1,9 +1,10 @@
-package simplex
+package simplex_test
 
 import (
 	"math"
 	"testing"
 
+	"github.com/chriso345/gspl/internal/simplex"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -183,7 +184,7 @@ func TestSimplexCases(t *testing.T) {
 			b := mat.NewVecDense(m, flattenArray(test.b))
 			c := mat.NewVecDense(n, flattenArray(test.c))
 
-			z, x, _, finalIndices, exitflag := Simplex(A, b, c, m, n)
+			z, x, _, finalIndices, exitflag := simplex.Simplex(A, b, c, m, n)
 
 			if !floatEquals(z, test.expectedZ) {
 				t.Errorf("%s Incorrect: Expected z=%.2f, Got %.6f", test.name, test.expectedZ, z)

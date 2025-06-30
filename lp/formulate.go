@@ -41,8 +41,6 @@ func (prog *LinearProgram) AddConstraint(constraint LpExpression, constraintType
 		panic("Objective function not set")
 	}
 
-	prog.ConstraintVector = append(prog.ConstraintVector, constraintType)
-
 	if rightHandSide < 0 {
 		// Multiply the constraint by -1, flip equality sign
 		rightHandSide = math.Abs(rightHandSide)
@@ -51,6 +49,8 @@ func (prog *LinearProgram) AddConstraint(constraint LpExpression, constraintType
 		}
 		constraintType = -constraintType
 	}
+
+	prog.ConstraintVector = append(prog.ConstraintVector, constraintType)
 
 	currentRow := 0
 	if prog.Constraints == nil {
