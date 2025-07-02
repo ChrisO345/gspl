@@ -37,4 +37,6 @@ func TestExamplesDoNotPanic(t *testing.T) {
 			}
 		})
 	}
+
+	// panic("")
 }

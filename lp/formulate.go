@@ -15,8 +15,8 @@ func (prog *LinearProgram) AddObjective(sense LpSense, objective LpExpression) {
 	prog.ObjectiveFunc = mat.NewVecDense(len(objective.Terms), nil)
 	for i, v := range objective.Terms {
 		mappedIndex := -1
-		for j, varName := range prog.VariablesMap {
-			if varName == v.Variable.Name {
+		for j, lpVar := range prog.VariablesMap {
+			if lpVar.Name == v.Variable.Name {
 				mappedIndex = j
 				break
 			}
@@ -27,7 +27,7 @@ func (prog *LinearProgram) AddObjective(sense LpSense, objective LpExpression) {
 		prog.ObjectiveFunc.SetVec(i, v.Coefficient)
 	}
 
-	if prog.Sense == LpMaximise {
+	if prog.Sense == LpMinimise {
 		for i := range prog.ObjectiveFunc.RawVector().N {
 			prog.ObjectiveFunc.SetVec(i, -prog.ObjectiveFunc.At(i, 0))
 		}
@@ -65,8 +65,8 @@ func (prog *LinearProgram) AddConstraint(constraint LpExpression, constraintType
 	newRow := make([]float64, len(prog.VariablesMap))
 	for _, v := range constraint.Terms {
 		mappedIndex := -1
-		for j, varName := range prog.VariablesMap {
-			if varName == v.Variable.Name {
+		for j, lpVar := range prog.VariablesMap {
+			if lpVar.Name == v.Variable.Name {
 				mappedIndex = j
 				break
 			}
@@ -79,4 +79,22 @@ func (prog *LinearProgram) AddConstraint(constraint LpExpression, constraintType
 
 	prog.Constraints.SetRow(currentRow, newRow)
 	prog.RHS.SetVec(currentRow, rightHandSide)
+}
+
+// AddIPConstraints adds integer programming constraints to the linear program.
+func (prog *LinearProgram) AddIPConstraints() {
+	if prog.VariablesMap == nil {
+		return
+	}
+
+	for _, v := range prog.VariablesMap {
+		if v.Category == LpCategoryBinary {
+			constraint := LpExpression{
+				Terms: []LpTerm{
+					{Variable: v, Coefficient: 1},
+				},
+			}
+			prog.AddConstraint(constraint, LpConstraintEQ, 1)
+		}
+	}
 }

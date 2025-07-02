@@ -77,6 +77,13 @@ func WithSolverMethod(m common.SolverMethod) SolverOption {
 	}
 }
 
+// WithLogging enables or disables logging.
+func WithLogging(enabled bool) SolverOption {
+	return func(cfg *common.SolverConfig) {
+		cfg.Logging = enabled
+	}
+}
+
 // NewSolverConfig builds a SolverConfig applying all options on defaults.
 func NewSolverConfig(opts ...SolverOption) *common.SolverConfig {
 	cfg := common.DefaultSolverConfig()

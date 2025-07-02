@@ -21,7 +21,7 @@ type LinearProgram struct {
 
 	// Others
 	Description      string
-	VariablesMap     []string
+	VariablesMap     []LpVariable
 	Status           LpStatus
 	Sense            LpSense
 	ConstraintVector []LpConstraintType
@@ -32,11 +32,11 @@ func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 
 	lp := LinearProgram{
 		Description:  desc,
-		VariablesMap: make([]string, len(vars)),
+		VariablesMap: make([]LpVariable, len(vars)),
 	}
 
 	for i, v := range vars {
-		lp.VariablesMap[i] = v.Name
+		lp.VariablesMap[i] = v
 	}
 
 	lp.Status = LpStatusNotSolved

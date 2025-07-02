@@ -27,20 +27,27 @@ type LpVariable struct {
 	Value        float64
 	IsSlack      bool
 	IsArtificial bool
+	Category     LpCategory
 }
 
 // NewVariable creates a new LpVariable with the given name.
-func NewVariable(name string) LpVariable {
-	return LpVariable{name, 0, false, false}
+func NewVariable(name string, category ...LpCategory) LpVariable {
+	if len(category) > 1 {
+		panic("Only one LpCategory can be specified for a variable")
+	}
+	if len(category) == 0 {
+		return LpVariable{name, 0, false, false, LpCategoryContinuous} // Default to continuous variable
+	}
+	return LpVariable{name, 0, false, false, category[0]}
 }
 
 // LpCategory represents the category of a linear programming variable, such as continuous, integer, or binary.
-type LpCategory string
+type LpCategory int
 
 const (
-	LpContinuous = LpCategory("Continuous")
-	LpInteger    = LpCategory("Integer") // TODO: Implement integer solving
-	LpBinary     = LpCategory("Binary")  // TODO: Implement binary solving
+	LpCategoryContinuous LpCategory = iota
+	LpCategoryInteger
+	LpCategoryBinary
 )
 
 // LpSense represents the sense of the linear programming problem, either minimization or maximization.
@@ -55,12 +62,12 @@ const (
 type LpStatus int
 
 const (
-	LpStatusNotSolved      = LpStatus(0)
-	LpStatusOptimal        = LpStatus(1)
-	LpStatusInfeasible     = LpStatus(2)
-	LpStatusUnbounded      = LpStatus(3)
-	LpStatusUndefined      = LpStatus(4)
-	LpStatusNotImplemented = LpStatus(5)
+	LpStatusNotSolved LpStatus = iota
+	LpStatusOptimal
+	LpStatusInfeasible
+	LpStatusUnbounded
+	LpStatusUndefined
+	LpStatusNotImplemented
 )
 
 // LpStatusMap maps LpStatus values to their string representations.

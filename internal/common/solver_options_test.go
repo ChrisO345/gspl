@@ -3,8 +3,8 @@ package common_test
 import (
 	"testing"
 
-	"github.com/chriso345/gspl/internal/assert"
 	"github.com/chriso345/gspl/internal/common"
+	"github.com/chriso345/gspl/internal/testutils/assert"
 )
 
 func TestDefaultSolverConfig(t *testing.T) {

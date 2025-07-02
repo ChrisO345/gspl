@@ -3,14 +3,18 @@ package lp_test
 import (
 	"testing"
 
-	"github.com/chriso345/gspl/internal/assert"
+	"github.com/chriso345/gspl/internal/testutils/assert"
 	"github.com/chriso345/gspl/lp"
 	"gonum.org/v1/gonum/mat"
 )
 
 func makeSimpleLP() *lp.LinearProgram {
 	return &lp.LinearProgram{
-		VariablesMap: []string{"x", "y", "z"},
+		VariablesMap: []lp.LpVariable{
+			{"x", 0, false, false, lp.LpCategoryContinuous},
+			{"y", 0, false, false, lp.LpCategoryContinuous},
+			{"z", 0, false, false, lp.LpCategoryContinuous},
+		},
 	}
 }
 
@@ -23,7 +27,7 @@ func TestAddObjective_SetsObjectiveFunc(t *testing.T) {
 		lp.NewTerm(3.0, lp.NewVariable("z")),
 	})
 
-	prog.AddObjective(lp.LpMinimise, obj)
+	prog.AddObjective(lp.LpMaximise, obj)
 
 	assert.AssertEqual(t, prog.ObjectiveFunc.Len(), 3)
 
@@ -34,7 +38,7 @@ func TestAddObjective_SetsObjectiveFunc(t *testing.T) {
 	}
 }
 
-func TestAddObjective_Maximise_NegatesObjective(t *testing.T) {
+func TestAddObjective_Minimise_NegatesObjective(t *testing.T) {
 	prog := makeSimpleLP()
 
 	obj := lp.NewExpression([]lp.LpTerm{
@@ -43,7 +47,7 @@ func TestAddObjective_Maximise_NegatesObjective(t *testing.T) {
 		lp.NewTerm(0, lp.NewVariable("z")),
 	})
 
-	prog.AddObjective(lp.LpMaximise, obj)
+	prog.AddObjective(lp.LpMinimise, obj)
 
 	expected := []float64{-1.5, 2.5, 0}
 	for i := range 3 {

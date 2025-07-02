@@ -3,7 +3,7 @@ package solver_test
 import (
 	"testing"
 
-	"github.com/chriso345/gspl/internal/assert"
+	"github.com/chriso345/gspl/internal/testutils/assert"
 	"github.com/chriso345/gspl/solver"
 )
 

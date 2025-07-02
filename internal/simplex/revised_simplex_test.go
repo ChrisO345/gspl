@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/chriso345/gspl/internal/assert"
 	"github.com/chriso345/gspl/internal/simplex"
+	"github.com/chriso345/gspl/internal/testutils/assert"
 	"gonum.org/v1/gonum/mat"
 )
 

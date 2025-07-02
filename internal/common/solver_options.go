@@ -15,6 +15,7 @@ type SolverConfig struct {
 
 	RandomSeed   int
 	SolverMethod SolverMethod
+	Logging      bool
 }
 
 // DefaultSolverConfig returns the default solver configuration.
@@ -30,6 +31,7 @@ func DefaultSolverConfig() *SolverConfig {
 		Threads:              0, // 0 means use all available cores
 		RandomSeed:           42,
 		SolverMethod:         SimplexMethod,
+		Logging:              false, // Default logging is off
 	}
 }
 
@@ -58,7 +60,8 @@ const (
 	LargestInfeasibility HeuristicStrategy = "largest-infeasibility"
 )
 
-// SolverMethod represents the method used for solving linear programming problems.
+// SolverMethod represents the method used for solving linear programming problems or the
+// LP relaxation of integer programming problems.
 type SolverMethod string
 
 const (
