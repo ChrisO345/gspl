@@ -35,9 +35,7 @@ func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 		VariablesMap: make([]LpVariable, len(vars)),
 	}
 
-	for i, v := range vars {
-		lp.VariablesMap[i] = v
-	}
+	copy(lp.VariablesMap, vars)
 
 	lp.Status = LpStatusNotSolved
 	return lp

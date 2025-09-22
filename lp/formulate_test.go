@@ -3,7 +3,7 @@ package lp_test
 import (
 	"testing"
 
-	"github.com/chriso345/gspl/internal/testutils/assert"
+	"github.com/chriso345/gore/assert"
 	"github.com/chriso345/gspl/lp"
 	"gonum.org/v1/gonum/mat"
 )
@@ -29,12 +29,12 @@ func TestAddObjective_SetsObjectiveFunc(t *testing.T) {
 
 	prog.AddObjective(lp.LpMaximise, obj)
 
-	assert.AssertEqual(t, prog.ObjectiveFunc.Len(), 3)
+	assert.Equal(t, prog.ObjectiveFunc.Len(), 3)
 
 	expected := []float64{1, 2, 3}
 	for i := range 3 {
 		got := prog.ObjectiveFunc.AtVec(i)
-		assert.AssertEqual(t, got, expected[i])
+		assert.Equal(t, got, expected[i])
 	}
 }
 
@@ -52,7 +52,7 @@ func TestAddObjective_Minimise_NegatesObjective(t *testing.T) {
 	expected := []float64{-1.5, 2.5, 0}
 	for i := range 3 {
 		got := prog.ObjectiveFunc.AtVec(i)
-		assert.AssertEqual(t, got, expected[i])
+		assert.Equal(t, got, expected[i])
 	}
 }
 
@@ -63,7 +63,7 @@ func TestAddObjective_UnknownVariable_Panics(t *testing.T) {
 		lp.NewTerm(1, lp.NewVariable("unknown")),
 	})
 
-	assert.AssertPanic(t, func() {
+	assert.Panic(t, func() {
 		prog.AddObjective(lp.LpMinimise, obj)
 	})
 }
@@ -84,15 +84,15 @@ func TestAddConstraint_AppendsConstraint(t *testing.T) {
 
 	prog.AddConstraint(constraint, lp.LpConstraintLE, 10)
 
-	assert.AssertEqual(t, len(prog.ConstraintVector), 1)
+	assert.Equal(t, len(prog.ConstraintVector), 1)
 
 	gotRow := mat.Row(nil, 0, prog.Constraints)
 	expectedRow := []float64{1, 0, 2}
 	for i, val := range expectedRow {
-		assert.AssertEqual(t, gotRow[i], val)
+		assert.Equal(t, gotRow[i], val)
 	}
 
-	assert.AssertEqual(t, prog.RHS.AtVec(0), 10.0)
+	assert.Equal(t, prog.RHS.AtVec(0), 10.0)
 }
 
 func TestAddConstraint_NegativeRHS_FlipsConstraint(t *testing.T) {
@@ -114,12 +114,12 @@ func TestAddConstraint_NegativeRHS_FlipsConstraint(t *testing.T) {
 	gotRow := mat.Row(nil, 0, prog.Constraints)
 	expectedRow := []float64{-1, 1, 0}
 	for i, val := range expectedRow {
-		assert.AssertEqual(t, val, gotRow[i])
+		assert.Equal(t, val, gotRow[i])
 	}
 
-	assert.AssertEqual(t, prog.RHS.AtVec(0), 5.0)
+	assert.Equal(t, prog.RHS.AtVec(0), 5.0)
 
-	assert.AssertEqual(t, prog.ConstraintVector[0], -lp.LpConstraintGE)
+	assert.Equal(t, prog.ConstraintVector[0], -lp.LpConstraintGE)
 }
 
 func TestAddConstraint_WithoutObjective_Panics(t *testing.T) {
@@ -129,7 +129,7 @@ func TestAddConstraint_WithoutObjective_Panics(t *testing.T) {
 		lp.NewTerm(1, lp.NewVariable("x")),
 	})
 
-	assert.AssertPanic(t, func() {
+	assert.Panic(t, func() {
 		prog.AddConstraint(constraint, lp.LpConstraintLE, 10)
 	})
 }

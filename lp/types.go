@@ -89,7 +89,7 @@ func (s LpStatus) String() string {
 type LpConstraintType int
 
 const (
-	LpConstraintLE = LpConstraintType(-1)
-	LpConstraintEQ = LpConstraintType(0)
-	LpConstraintGE = LpConstraintType(1)
+	LpConstraintLE LpConstraintType = -1
+	LpConstraintEQ LpConstraintType = 0
+	LpConstraintGE LpConstraintType = 1
 )

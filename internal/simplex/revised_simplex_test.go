@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/chriso345/gore/assert"
 	"github.com/chriso345/gspl/internal/simplex"
-	"github.com/chriso345/gspl/internal/testutils/assert"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -187,7 +187,7 @@ func TestSimplexCases(t *testing.T) {
 
 			z, x, _, finalIndices, exitflag := simplex.Simplex(A, b, c, m, n)
 
-			assert.AssertIsClose(t, z, test.expectedZ, tolerance)
+			assert.IsClose(t, z, test.expectedZ, tolerance)
 
 			if !vectorEquals(x, test.expectedX) {
 				t.Errorf("%s Incorrect: Expected x=%+v incorrect: got %+v", test.name, test.expectedX, x.RawVector().Data)
@@ -197,7 +197,7 @@ func TestSimplexCases(t *testing.T) {
 				t.Errorf("%s Incorrect: Expected indices=%+v got %+v", test.name, test.expectedIdx, finalIndices.RawVector().Data)
 			}
 
-			assert.AssertEqual(t, exitflag, test.expectedExit)
+			assert.Equal(t, exitflag, test.expectedExit)
 		})
 	}
 }

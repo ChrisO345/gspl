@@ -2,19 +2,24 @@ package brancher
 
 import "gonum.org/v1/gonum/mat"
 
+// Tree represents the branch-and-bound tree structure used to solve integer linear programming problems.
+type Tree struct {
+	root       *Branch
+	incumbentZ float64
+	incumbentX *mat.VecDense
+
+	vars []string // Variable names for the problem
+}
+
 // Branch represents a node in the branch-and-bound tree.
 type Branch struct {
 	left         *Branch
 	right        *Branch
-	node         float64
+	value        float64
 	branchStatus BranchStatus
+
 	highestLower *float64
 	lowestUpper  *float64 // Incumbent Solution of the Tree
-	vars         []string
-
-	// Global tracking (in root node only)
-	incumbentZ float64
-	incumbentX *mat.VecDense
 }
 
 // Constraint represents an additional integer constraint in the branch-and-bound algorithm.

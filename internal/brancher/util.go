@@ -16,8 +16,6 @@ func (b *Branch) String() string {
 		stringBuilder += "  Right: nil\n"
 	}
 
-	stringBuilder += "  Node: " + fmt.Sprintf("%f", b.node) + "\n"
-
 	stringBuilder += "  BranchStatus: " + b.branchStatus.String() + "\n"
 	if b.highestLower != nil {
 		stringBuilder += "  HighestLower: " + fmt.Sprintf("%f", *b.highestLower) + "\n"

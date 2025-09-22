@@ -11,23 +11,6 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-type (
-	SolverMethod      = common.SolverMethod
-	BranchingStrategy = common.BranchingStrategy
-	HeuristicStrategy = common.HeuristicStrategy
-)
-
-// Re-export constants
-const (
-	SimplexMethod        SolverMethod      = common.SimplexMethod
-	FirstFractional      BranchingStrategy = common.FirstFractional
-	MostFractional       BranchingStrategy = common.MostFractional
-	LeastFractional      BranchingStrategy = common.LeastFractional
-	RandomBranching      BranchingStrategy = common.RandomBranching
-	RandomHeuristic      HeuristicStrategy = common.RandomHeuristic
-	LargestInfeasibility HeuristicStrategy = common.LargestInfeasibility
-)
-
 // Solve takes a linear program and an optional configuration, and attempts to solve it using the revised simplex method.
 func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
 	// Build the full solver options by applying defaults and options
@@ -82,6 +65,7 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
 	return prog
 }
 
+// solveFormulation solves the linear program via an appropriate method based on the presence of integer programming constraints.
 func solveFormulation(prog *lp.LinearProgram, opts *common.SolverConfig) (float64, *mat.VecDense, *mat.VecDense, *mat.VecDense, int) {
 	m := prog.Constraints.RawMatrix().Rows
 	n := len(prog.VariablesMap)
@@ -103,13 +87,4 @@ func solveFormulation(prog *lp.LinearProgram, opts *common.SolverConfig) (float6
 		fmt.Println("No IP constraints detected, using simplex method")
 	}
 	return simplex.Simplex(prog.Constraints, prog.RHS, prog.ObjectiveFunc, m, n)
-}
-
-func hasIPConstraints(prog *lp.LinearProgram) bool {
-	for _, v := range prog.VariablesMap {
-		if v.Category > lp.LpCategoryContinuous {
-			return true
-		}
-	}
-	return false
 }

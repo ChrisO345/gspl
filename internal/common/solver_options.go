@@ -6,12 +6,8 @@ type SolverConfig struct {
 	Tolerance     float64
 	MaxIterations int
 
-	GapSensitivity       float64
-	UseCuttingPlanes     bool
-	BranchingStrategy    BranchingStrategy
-	HeuristicStrategy    HeuristicStrategy
-	StrongBranchingDepth int
-	Threads              int
+	GapSensitivity float64
+	Threads        int
 
 	RandomSeed   int
 	SolverMethod SolverMethod
@@ -21,17 +17,13 @@ type SolverConfig struct {
 // DefaultSolverConfig returns the default solver configuration.
 func DefaultSolverConfig() *SolverConfig {
 	return &SolverConfig{
-		Tolerance:            1e-6,
-		MaxIterations:        1000,
-		GapSensitivity:       0.05,
-		UseCuttingPlanes:     false,
-		BranchingStrategy:    FirstFractional,
-		HeuristicStrategy:    RandomHeuristic,
-		StrongBranchingDepth: 0,
-		Threads:              0, // 0 means use all available cores
-		RandomSeed:           42,
-		SolverMethod:         SimplexMethod,
-		Logging:              false, // Default logging is off
+		Tolerance:      1e-6,
+		MaxIterations:  1000,
+		GapSensitivity: 0.05,
+		Threads:        0, // 0 means use all available cores
+		RandomSeed:     42,
+		SolverMethod:   SimplexMethod,
+		Logging:        false, // Default logging is off
 	}
 }
 
@@ -41,24 +33,6 @@ func ValidateSolverConfig(cfg *SolverConfig) error {
 	_ = cfg
 	return nil
 }
-
-// BranchingStrategy represents the strategy used for branching in integer programming.
-type BranchingStrategy string
-
-const (
-	FirstFractional BranchingStrategy = "first-fractional"
-	MostFractional  BranchingStrategy = "most-fractional"
-	LeastFractional BranchingStrategy = "least-fractional"
-	RandomBranching BranchingStrategy = "random-branching"
-)
-
-// HeuristicStrategy represents the strategy used for heuristics in integer programming.
-type HeuristicStrategy string
-
-const (
-	RandomHeuristic      HeuristicStrategy = "random"
-	LargestInfeasibility HeuristicStrategy = "largest-infeasibility"
-)
 
 // SolverMethod represents the method used for solving linear programming problems or the
 // LP relaxation of integer programming problems.

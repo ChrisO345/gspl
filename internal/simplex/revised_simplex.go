@@ -12,6 +12,7 @@ import (
 // It calls RevisedSimplex for both phase 1 and phase 2 internally.
 func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues, indices *mat.VecDense, exitflag int) {
 	// TODO: Replace exitflag integer implementation with proper error handling or struct
+
 	// Create identity matrix I of size m
 	I := matrix.Eye(m)
 

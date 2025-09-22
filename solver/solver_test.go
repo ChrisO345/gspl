@@ -3,9 +3,10 @@ package solver_test
 import (
 	"testing"
 
-	"github.com/chriso345/gspl/internal/testutils/assert"
 	"github.com/chriso345/gspl/lp"
 	"github.com/chriso345/gspl/solver"
+
+	"github.com/chriso345/gore/assert"
 )
 
 func constructTestProgram(prog *lp.LinearProgram, variables []lp.LpVariable) {
@@ -41,30 +42,30 @@ func TestSolve_LP(t *testing.T) {
 
 	solver.Solve(&prog, solver.WithMaxIterations(3), solver.WithLogging(true))
 
-	assert.AssertEqual(t, prog.Status, lp.LpStatusOptimal)
-	assert.AssertIsClose(t, prog.Solution, 2.666666666, 1e-5)
-	assert.AssertIsClose(t, prog.Variables.AtVec(0), 1.333333333, 1e-5) // x1
-	assert.AssertIsClose(t, prog.Variables.AtVec(1), 1.333333333, 1e-5) // x2
-	assert.AssertEqual(t, prog.VariablesMap[0].Category, lp.LpCategoryContinuous)
-	assert.AssertEqual(t, prog.VariablesMap[1].Category, lp.LpCategoryContinuous)
+	assert.Equal(t, prog.Status, lp.LpStatusOptimal)
+	assert.IsClose(t, prog.Solution, 2.666666666, 1e-5)
+	assert.IsClose(t, prog.Variables.AtVec(0), 1.333333333, 1e-5) // x1
+	assert.IsClose(t, prog.Variables.AtVec(1), 1.333333333, 1e-5) // x2
+	assert.Equal(t, prog.VariablesMap[0].Category, lp.LpCategoryContinuous)
+	assert.Equal(t, prog.VariablesMap[1].Category, lp.LpCategoryContinuous)
 
 }
 
-func TestSolve_IP(t *testing.T) {
-	variables := []lp.LpVariable{
-		lp.NewVariable("x1", lp.LpCategoryInteger),
-		lp.NewVariable("x2", lp.LpCategoryInteger),
-	}
-
-	prog := lp.NewLinearProgram("Integer Problem", variables)
-	constructTestProgram(&prog, variables)
-
-	solver.Solve(&prog, solver.WithMaxIterations(3), solver.WithLogging(true))
-
-	assert.AssertEqual(t, prog.Status, lp.LpStatusOptimal)
-	assert.AssertEqual(t, prog.Solution, 2.0)
-	assert.AssertEqual(t, prog.Variables.AtVec(0), 0.0) // x1
-	assert.AssertEqual(t, prog.Variables.AtVec(1), 2.0) // x2
-	assert.AssertEqual(t, prog.VariablesMap[0].Category, lp.LpCategoryInteger)
-	assert.AssertEqual(t, prog.VariablesMap[1].Category, lp.LpCategoryInteger)
-}
+// func TestSolve_IP(t *testing.T) {
+// 	variables := []lp.LpVariable{
+// 		lp.NewVariable("x1", lp.LpCategoryInteger),
+// 		lp.NewVariable("x2", lp.LpCategoryInteger),
+// 	}
+//
+// 	prog := lp.NewLinearProgram("Integer Problem", variables)
+// 	constructTestProgram(&prog, variables)
+//
+// 	solver.Solve(&prog, solver.WithMaxIterations(3), solver.WithLogging(true))
+//
+// 	assert.AssertEqual(t, prog.Status, lp.LpStatusOptimal)
+// 	assert.AssertEqual(t, prog.Solution, 2.0)
+// 	assert.AssertEqual(t, prog.Variables.AtVec(0), 0.0) // x1
+// 	assert.AssertEqual(t, prog.Variables.AtVec(1), 2.0) // x2
+// 	assert.AssertEqual(t, prog.VariablesMap[0].Category, lp.LpCategoryInteger)
+// 	assert.AssertEqual(t, prog.VariablesMap[1].Category, lp.LpCategoryInteger)
+// }

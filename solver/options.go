@@ -28,34 +28,6 @@ func WithGapSensitivity(gap float64) SolverOption {
 	}
 }
 
-// WithUseCuttingPlanes enables or disables cutting planes.
-func WithUseCuttingPlanes(enabled bool) SolverOption {
-	return func(cfg *common.SolverConfig) {
-		cfg.UseCuttingPlanes = enabled
-	}
-}
-
-// WithBranchingStrategy sets the branching strategy.
-func WithBranchingStrategy(bs common.BranchingStrategy) SolverOption {
-	return func(cfg *common.SolverConfig) {
-		cfg.BranchingStrategy = bs
-	}
-}
-
-// WithHeuristicStrategy sets the heuristic strategy.
-func WithHeuristicStrategy(hs common.HeuristicStrategy) SolverOption {
-	return func(cfg *common.SolverConfig) {
-		cfg.HeuristicStrategy = hs
-	}
-}
-
-// WithStrongBranchingDepth sets the strong branching depth.
-func WithStrongBranchingDepth(depth int) SolverOption {
-	return func(cfg *common.SolverConfig) {
-		cfg.StrongBranchingDepth = depth
-	}
-}
-
 // WithThreads sets the number of threads to use.
 func WithThreads(n int) SolverOption {
 	return func(cfg *common.SolverConfig) {
