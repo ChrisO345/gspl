@@ -10,9 +10,7 @@ import (
 // Simplex solves the LP problem using the standard simplex method.
 //
 // It calls RevisedSimplex for both phase 1 and phase 2 internally.
-func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues, indices *mat.VecDense, exitflag int) {
-	// TODO: Replace exitflag integer implementation with proper error handling or struct
-
+func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues, indices *mat.VecDense, exitflag ExitFlag) {
 	// Create identity matrix I of size m
 	I := matrix.Eye(m)
 
@@ -60,7 +58,6 @@ func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues
 	// Phase 2: Solve actual problem
 	A_phase2 := mat.NewDense(m, n+m, nil)
 	for i := range m {
-		// TODO: Optimize this into a single loop
 		for j := range n {
 			A_phase2.Set(i, j, A.At(i, j))
 		}
@@ -93,7 +90,7 @@ func Simplex(A *mat.Dense, b, c *mat.VecDense, m, n int) (z float64, x, piValues
 //
 // It solves the LP in the specified phase (1 or 2) given an initial basis.
 // Returns optimal objective, solution, duals, basis indices, and exit flag.
-func RevisedSimplex(A *mat.Dense, b, c *mat.VecDense, m, n int, Bmatrix *mat.Dense, indices_ *mat.VecDense, phase int) (z float64, x, pivalues, indices *mat.VecDense, exitflag int) {
+func RevisedSimplex(A *mat.Dense, b, c *mat.VecDense, m, n int, Bmatrix *mat.Dense, indices_ *mat.VecDense, phase int) (z float64, x, pivalues, indices *mat.VecDense, exitflag ExitFlag) {
 	exitflag = 0
 	x = mat.NewVecDense(n, nil) // Initialize x as a vector of size n
 	B := Bmatrix
@@ -152,7 +149,7 @@ func RevisedSimplex(A *mat.Dense, b, c *mat.VecDense, m, n int, Bmatrix *mat.Den
 		leave := findLeave(B, as, xb, indices, phase, n)
 		if leave == -1 {
 			for i := range m {
-				idx := int(indices.At(i, i)) // Get the index of the basic variable from indices vector
+				idx := int(indices.AtVec(i)) // Get the index of the basic variable from indices vector
 				if idx < n {
 					x.SetVec(idx, xb.AtVec(i)) // Assign the value from xb to x at index idx
 				}

@@ -47,7 +47,7 @@ func TestSimplexCases(t *testing.T) {
 		expectedZ    float64
 		expectedX    [][]float64
 		expectedIdx  [][]float64
-		expectedExit int
+		expectedExit simplex.ExitFlag
 	}{
 		{
 			name: "Optimal BFS",
@@ -69,7 +69,7 @@ func TestSimplexCases(t *testing.T) {
 			expectedIdx: [][]float64{
 				{3}, {5}, {4},
 			},
-			expectedExit: 0,
+			expectedExit: simplex.ExitOptimal,
 		},
 		{
 			name: "Already Optimal",
@@ -89,7 +89,7 @@ func TestSimplexCases(t *testing.T) {
 				{3}, {2}, {1}, {0},
 			},
 			expectedIdx:  nil, // Indexes not validated in this test
-			expectedExit: 0,
+			expectedExit: simplex.ExitOptimal,
 		},
 		{
 			name: "Unbounded",
@@ -107,7 +107,20 @@ func TestSimplexCases(t *testing.T) {
 			expectedIdx: [][]float64{
 				{3}, {0}, {1},
 			},
-			expectedExit: -1,
+			expectedExit: simplex.ExitUnbounded,
+		},
+		{
+			name: "Infeasible",
+			A: [][]float64{
+				{1, 0},
+				{1, 0},
+			},
+			b:            [][]float64{{1}, {-2}},
+			c:            [][]float64{{1}, {1}},
+			expectedZ:    3,
+			expectedX:    [][]float64{{-2}, {0}, {3}, {0}},
+			expectedIdx:  nil,
+			expectedExit: simplex.ExitInfeasible,
 		},
 		{
 			name: "Medium Sized Problem",
@@ -121,7 +134,7 @@ func TestSimplexCases(t *testing.T) {
 			expectedZ:    -32,
 			expectedX:    [][]float64{{0}, {0}, {4}, {0}, {4}},
 			expectedIdx:  [][]float64{{2}, {4}, {7}},
-			expectedExit: 0,
+			expectedExit: simplex.ExitOptimal,
 		},
 		{
 			name: "All Zeros",
@@ -142,7 +155,7 @@ func TestSimplexCases(t *testing.T) {
 			expectedIdx: [][]float64{
 				{4}, {5},
 			},
-			expectedExit: 0,
+			expectedExit: simplex.ExitOptimal,
 		},
 		{
 			name: "Big Problem (35 variables, 11 constaints",
@@ -169,16 +182,12 @@ func TestSimplexCases(t *testing.T) {
 			expectedIdx: [][]float64{
 				{4}, {33}, {26}, {13}, {16}, {21}, {10}, {7}, {28}, {0}, {18},
 			},
-			expectedExit: 0,
+			expectedExit: simplex.ExitOptimal,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.name == "Unbounded" { // FIXME: Error with the unbounded test, currently skipping
-				t.Skip("Skipping test: " + test.name)
-				return
-			}
 			m := len(test.b)
 			n := len(test.c)
 			A := mat.NewDense(m, n, flattenArray(test.A))

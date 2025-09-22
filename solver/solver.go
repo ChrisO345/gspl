@@ -66,7 +66,7 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
 }
 
 // solveFormulation solves the linear program via an appropriate method based on the presence of integer programming constraints.
-func solveFormulation(prog *lp.LinearProgram, opts *common.SolverConfig) (float64, *mat.VecDense, *mat.VecDense, *mat.VecDense, int) {
+func solveFormulation(prog *lp.LinearProgram, opts *common.SolverConfig) (float64, *mat.VecDense, *mat.VecDense, *mat.VecDense, simplex.ExitFlag) {
 	m := prog.Constraints.RawMatrix().Rows
 	n := len(prog.VariablesMap)
 

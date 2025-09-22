@@ -10,7 +10,7 @@ import (
 )
 
 // BranchAndBound solves an integer linear programming problem using branch-and-bound.
-func BranchAndBound(A *mat.Dense, b, c *mat.VecDense, m, n int, opts common.SolverConfig) (float64, *mat.VecDense, *mat.VecDense, int) {
+func BranchAndBound(A *mat.Dense, b, c *mat.VecDense, m, n int, opts common.SolverConfig) (float64, *mat.VecDense, *mat.VecDense, simplex.ExitFlag) {
 	if opts.Logging {
 		fmt.Println("Starting Branch-and-Bound")
 	}
