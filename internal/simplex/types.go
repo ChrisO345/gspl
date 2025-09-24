@@ -7,4 +7,5 @@ const (
 	ExitUnbounded ExitFlag = iota - 1
 	ExitOptimal
 	ExitInfeasible
+	ExitUnsolved // Represents some other issue in the solver i.e. not implemented
 )

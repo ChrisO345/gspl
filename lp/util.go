@@ -78,10 +78,13 @@ func (lp *LinearProgram) String() string {
 
 // PrintSolution prints the solution of the linear program in a human-readable format.
 func (lp *LinearProgram) PrintSolution() {
-	fmt.Println(lp.Status.String())
-	fmt.Println(lp.Solution)
+	fmt.Println(lp.Description)
+	fmt.Printf("SolutionStatus: %s\n", lp.Status.String())
+	fmt.Printf("ObjectiveValue: %.4f\n", lp.Solution)
 
 	for i, v := range lp.VariablesMap {
-		fmt.Printf("%s: %f\n", v.Name, lp.Variables.At(i, 0))
+		if !lp.VariablesMap[i].IsSlack {
+			fmt.Printf("%s: %.4f\n", v.Name, lp.Variables.AtVec(i))
+		}
 	}
 }

@@ -46,3 +46,11 @@ const (
 	ConstraintDirectionLE ConstraintDirection = iota
 	ConstraintDirectionGE
 )
+
+// BranchSense represents the sense of branching in the branch-and-bound algorithm.
+type BranchSense int
+
+const (
+	BranchSenseMinimize = BranchSense(-1)
+	BranchSenseMaximize = BranchSense(1)
+)

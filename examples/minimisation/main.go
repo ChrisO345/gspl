@@ -6,11 +6,6 @@ import (
 )
 
 func main() {
-	// Objective: Minimise - 6 * x1 + 7 * x2 + 4 * x3
-	// Constraints: 2 * x1 + 5 * x2 - 1 * x3 <= 18
-	// Constraints: 1 * x1 - 1 * x2 - 2 * x3 <= -14
-	// Constraints: 3 * x1 + 2 * x2 + 2 * x3 = 26
-
 	variables := []lp.LpVariable{
 		lp.NewVariable("x1"),
 		lp.NewVariable("x2"),
@@ -53,11 +48,11 @@ func main() {
 	}
 
 	minProg := lp.NewLinearProgram("Minimisation Example", variables)
-	minProg.AddObjective(lp.LpMaximise, objective)
+	minProg.AddObjective(lp.LpMinimise, objective)
 	minProg.AddConstraint(lp.NewExpression(terms2), lp.LpConstraintLE, -4)
 	minProg.AddConstraint(lp.NewExpression(terms3), lp.LpConstraintLE, -4)
 	minProg.AddConstraint(lp.NewExpression(terms4), lp.LpConstraintLE, -8)
 
-	solver.Solve(&minProg)
+	solver.Solve(&minProg, solver.WithLogging(true))
 	minProg.PrintSolution()
 }

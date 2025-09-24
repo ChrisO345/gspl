@@ -30,6 +30,7 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
 	for i, constraintType := range prog.ConstraintVector {
 		if constraintType != lp.LpConstraintEQ {
 			slack := lp.NewVariable(fmt.Sprintf("s%d", i))
+			slack.IsSlack = true
 			prog.VariablesMap = append(prog.VariablesMap, slack)
 			unitVector := mat.NewDense(prog.Constraints.RawMatrix().Rows, 1, nil)
 			one := 1.0
@@ -41,6 +42,12 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) *lp.LinearProgram {
 
 			prog.ObjectiveFunc = matrix.ResizeVecDense(prog.ObjectiveFunc, prog.ObjectiveFunc.RawVector().N+1)
 			prog.ObjectiveFunc.SetVec(prog.ObjectiveFunc.RawVector().N-1, 0)
+		}
+	}
+
+	if prog.Sense == lp.LpMinimise {
+		for i := range prog.ObjectiveFunc.RawVector().N {
+			prog.ObjectiveFunc.SetVec(i, -prog.ObjectiveFunc.At(i, 0))
 		}
 	}
 
@@ -74,7 +81,8 @@ func solveFormulation(prog *lp.LinearProgram, opts *common.SolverConfig) (float6
 		if opts.Logging {
 			fmt.Println("IP constraints detected, using branch-and-bound method")
 		}
-		z, x, idx, flag := brancher.BranchAndBound(prog.Constraints, prog.RHS, prog.ObjectiveFunc, m, n, *opts)
+
+		z, x, idx, flag := brancher.BranchAndBound(prog.Constraints, prog.RHS, prog.ObjectiveFunc, m, n, brancher.BranchSense(prog.Sense), *opts)
 		return z, x, nil, idx, flag
 	}
 

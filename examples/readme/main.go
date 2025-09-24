@@ -48,5 +48,5 @@ func main() {
 	}), lp.LpConstraintEQ, 26)
 
 	// Solve it
-	solver.Solve(&example).PrintSolution()
+	solver.Solve(&example, solver.WithLogging(true)).PrintSolution()
 }

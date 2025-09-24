@@ -112,6 +112,7 @@ func MatDenseAppendColumn(A *mat.Dense, col *mat.VecDense) *mat.Dense {
 	return newMat
 }
 
+// MatDenseAppendRow appends a row vector to a *mat.Dense matrix.
 func MatDenseAppendRow(A *mat.Dense, row *mat.Dense) *mat.Dense {
 	if A == nil || row == nil {
 		return A
@@ -129,6 +130,33 @@ func MatDenseAppendRow(A *mat.Dense, row *mat.Dense) *mat.Dense {
 	for i := range rowM {
 		for j := range n {
 			newMat.Set(m+i, j, row.At(i, j))
+		}
+	}
+
+	return newMat
+}
+
+// MatDenseStack vertically stacks two *mat.Dense matrices.
+func MatDenseStack(A, B *mat.Dense) *mat.Dense {
+	if A == nil {
+		return B
+	}
+	if B == nil {
+		return A
+	}
+
+	mA, nA := A.Dims()
+	mB, nB := B.Dims()
+	if nA != nB {
+		panic("Number of columns must match for stacking")
+	}
+
+	newMat := mat.NewDense(mA+mB, nA, nil)
+	newMat.Copy(A)
+
+	for i := range mB {
+		for j := range nA {
+			newMat.Set(mA+i, j, B.At(i, j))
 		}
 	}
 

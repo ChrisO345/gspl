@@ -10,6 +10,7 @@
 * Implements an efficient revised simplex algorithm.
 * Clean and idiomatic API for modeling and solving LPs.
 * Focused on numerical stability and usability.
+* Performs basic branch-and-bouund techniques for pure integer problems.
 
 `gspl` is ideal for embedding linear optimization into Go-based software.
 
@@ -119,6 +120,15 @@ You can access and pass them as pointers:
 
 ```go
 x1 := &variables[0]
+```
+
+Forcing integer constraints is done at the variable level:
+
+```go
+variables := []lp.LpVariable{
+    lp.NewVariable("x1", lp.LpCategoryInteger),
+    lp.NewVariable("x2", lp.LpCategoryInteger),
+}
 ```
 
 ### Objective Function

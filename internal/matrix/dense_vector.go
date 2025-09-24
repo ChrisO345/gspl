@@ -48,10 +48,33 @@ func VecDenseAppend(v *mat.VecDense, newElem *mat.VecDense) *mat.VecDense {
 	return newVec
 }
 
+// VecToSlice converts a *mat.VecDense to a slice of float64.
 func VecToSlice(v *mat.VecDense) []float64 {
 	s := make([]float64, v.Len())
 	for i := range v.Len() {
 		s[i] = v.AtVec(i)
 	}
 	return s
+}
+
+// VecDenseStack vertically stacks two *mat.VecDense vectors.
+func VecDenseStack(v1, v2 *mat.VecDense) *mat.VecDense {
+	if v1 == nil || v1.Len() == 0 {
+		return v2
+	}
+	if v2 == nil || v2.Len() == 0 {
+		return v1
+	}
+
+	newLen := v1.Len() + v2.Len()
+	newVec := mat.NewVecDense(newLen, nil)
+
+	for i := range v1.Len() {
+		newVec.SetVec(i, v1.AtVec(i))
+	}
+	for j := range v2.Len() {
+		newVec.SetVec(v1.Len()+j, v2.AtVec(j))
+	}
+
+	return newVec
 }
