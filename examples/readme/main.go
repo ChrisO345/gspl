@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chriso345/gspl/lp"
-	// "github.com/chriso345/gspl/solver"
+	"github.com/chriso345/gspl/solver"
 )
 
 func main() {
@@ -53,7 +53,5 @@ func main() {
 	// solver.Solve(&example, solver.WithLogging(true)).PrintSolution()
 
 	fmt.Printf("%s\n", example.String())
-	fmt.Printf("%v\n", example.Objective.RawVector().Data)
-	fmt.Printf("%v\n", example.Constraints.RawMatrix().Data)
-	fmt.Printf("%v\n", example.RHS.RawVector().Data)
+	solver.Solve(&example)
 }

@@ -98,13 +98,32 @@ func (lp *LinearProgram) String() string {
 		sb.WriteString(fmt.Sprintf("%.3f\n", lp.RHS.AtVec(row)))
 	}
 
+	// Variable bounds (integer, binary)
+	intVars := []string{}
+	binVars := []string{}
+	for _, v := range lp.Vars {
+		switch v.Category {
+		case LpCategoryInteger:
+			intVars = append(intVars, v.Name)
+		case LpCategoryBinary:
+			binVars = append(binVars, v.Name)
+		}
+	}
+
+	if len(intVars) > 0 {
+		sb.WriteString("Integer variables: " + strings.Join(intVars, ", ") + "\n")
+	}
+	if len(binVars) > 0 {
+		sb.WriteString("Binary variables: " + strings.Join(binVars, ", ") + "\n")
+	}
+
 	return sb.String()
 }
 
 // PrintSolution prints the solution of the linear program in a human-readable format.
 func (lp *LinearProgram) PrintSolution() {
 	fmt.Println(lp.Description)
-	fmt.Printf("SolutionStatus: %s\n", lp.Status.String())
+	// fmt.Printf("SolutionStatus: %s\n", lp.Status.String())
 	fmt.Printf("ObjectiveValue: %.4f\n", lp.ObjectiveValue)
 
 	for i, v := range lp.Vars {

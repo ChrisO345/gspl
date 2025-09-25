@@ -1,6 +1,9 @@
 package lp
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"github.com/chriso345/gspl/internal/common"
+	"gonum.org/v1/gonum/mat"
+)
 
 // LinearProgram represents a linear programming problem in standard form.
 type LinearProgram struct {
@@ -16,7 +19,7 @@ type LinearProgram struct {
 	ObjectiveValue float64
 	PrimalSolution *mat.VecDense // x*
 	// DualSolution   *mat.VecDense // y*
-	Status LpStatus // Optimal, Infeasible, Unbounded, etc.
+	Status common.SolverStatus
 
 	// Simplex internal state (keep unexported)
 	indices  *mat.VecDense
@@ -38,6 +41,6 @@ func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 
 	copy(lp.Vars, vars)
 
-	lp.Status = LpStatusNotSolved
+	lp.Status = common.SolverStatusNotSolved
 	return lp
 }

@@ -65,8 +65,6 @@ const (
 	LpStatusOptimal
 	LpStatusInfeasible
 	LpStatusUnbounded
-	LpStatusUndefined
-	LpStatusNotImplemented
 )
 
 // String returns the string representation of the LpStatus.
@@ -76,8 +74,6 @@ func (s LpStatus) String() string {
 		"Optimal",
 		"Infeasible",
 		"Unbounded",
-		"Undefined",
-		"Not Implemented",
 	}[s]
 }
 
