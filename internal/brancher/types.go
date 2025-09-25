@@ -1,56 +1,51 @@
 package brancher
 
-import "gonum.org/v1/gonum/mat"
+// FIXME: The following code is all placeholder, and is partially indicative of the future implementation
 
-// Tree represents the branch-and-bound tree structure used to solve integer linear programming problems.
-type Tree struct {
-	root       *Branch
-	incumbentZ float64
-	incumbentX *mat.VecDense
+type IntegerProblem struct {
+	NumVars        int
+	NumConstraints int
 
-	vars []string // Variable names for the problem
+	Objective     []float64
+	Constraints   [][]float64
+	RHS           []float64
+	ConstraintDir []string
+	Sense         string // "max" or "min"
+
+	// Best known solution
+	BestSolution []float64
+	BestObj      float64
+
+	// User-supplied strategy functions
+	Branch    BranchFunc
+	Heuristic HeuristicFunc
+	Cut       CutFunc
 }
 
-// Branch represents a node in the branch-and-bound tree.
-type Branch struct {
-	left         *Branch
-	right        *Branch
-	value        float64
-	branchStatus BranchStatus
+// Branching: takes a node, returns two child nodes (or more if you generalize).
+type BranchFunc func(node *Node) ([]*Node, error)
 
-	highestLower *float64
-	lowestUpper  *float64 // Incumbent Solution of the Tree
+// Heuristic: try to find a feasible integer solution quickly.
+type HeuristicFunc func(node *Node) ([]float64, float64, bool)
+
+// Cutting planes: generate additional constraints for a node.
+type CutFunc func(node *Node) [][]float64
+
+type Node struct {
+	ID       int
+	ParentID int
+	Depth    int
+
+	Bounds [][2]float64
+
+	RelaxedSol []float64
+	RelaxedObj float64
+
+	IsFeasible bool
+	IsInteger  bool
+
+	BranchVar   int
+	BranchValue float64
+
+	LowerBound float64
 }
-
-// Constraint represents an additional integer constraint in the branch-and-bound algorithm.
-type Constraint struct {
-	varIndex  int
-	value     int
-	direction ConstraintDirection
-}
-
-// BranchStatus represents the status of a branch in the branch-and-bound algorithm.
-type BranchStatus int
-
-const (
-	BranchStatusUnexplored BranchStatus = iota
-	BranchStatusInfeasible
-	BranchStatusFeasible
-	BranchStatusIncumbent
-)
-
-// ConstraintDirection represents the direction of the constraint in the branch-and-bound algorithm.
-type ConstraintDirection int
-
-const (
-	ConstraintDirectionLE ConstraintDirection = iota
-	ConstraintDirectionGE
-)
-
-// BranchSense represents the sense of branching in the branch-and-bound algorithm.
-type BranchSense int
-
-const (
-	BranchSenseMinimize = BranchSense(-1)
-	BranchSenseMaximize = BranchSense(1)
-)

@@ -4,38 +4,39 @@ import "gonum.org/v1/gonum/mat"
 
 // LinearProgram represents a linear programming problem in standard form.
 type LinearProgram struct {
+	// Problem definition
+	Objective   *mat.VecDense      // c
+	Constraints *mat.Dense         // A
+	RHS         *mat.VecDense      // b
+	Sense       LpSense            // Minimize or Maximize
+	ConTypes    []LpConstraintType // metadata for constraints
+	Vars        []LpVariable       // metadata for variables
+
 	// Solution
-	Solution float64 // z
+	ObjectiveValue float64
+	PrimalSolution *mat.VecDense // x*
+	// DualSolution   *mat.VecDense // y*
+	Status LpStatus // Optimal, Infeasible, Unbounded, etc.
 
-	// Matrix Representation
-	Variables     *mat.VecDense // x
-	ObjectiveFunc *mat.VecDense // c
-	Constraints   *mat.Dense    // A
-	RHS           *mat.VecDense // b
+	// Simplex internal state (keep unexported)
+	indices  *mat.VecDense
+	piValues *mat.VecDense
+	basis    *mat.Dense
+	cb       *mat.VecDense
 
-	// Simplex Internal Variables
-	Indices  *mat.VecDense // Indices of basic variables
-	pivalues *mat.VecDense // Pivot values
-	bMatrix  *mat.Dense    // Basis matrix
-	cb       *mat.VecDense // Coefficients of the basis variables
-
-	// Others
-	Description      string
-	VariablesMap     []LpVariable
-	Status           LpStatus
-	Sense            LpSense
-	ConstraintVector []LpConstraintType
+	// Metadata
+	Description string
 }
 
 // NewLinearProgram Create a new Linear Program
 func NewLinearProgram(desc string, vars []LpVariable) LinearProgram {
 
 	lp := LinearProgram{
-		Description:  desc,
-		VariablesMap: make([]LpVariable, len(vars)),
+		Description: desc,
+		Vars:        make([]LpVariable, len(vars)),
 	}
 
-	copy(lp.VariablesMap, vars)
+	copy(lp.Vars, vars)
 
 	lp.Status = LpStatusNotSolved
 	return lp

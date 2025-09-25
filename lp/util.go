@@ -6,12 +6,16 @@ import (
 	"strings"
 )
 
-// String returns a string representation of the LinearProgram
 // String returns a string representation of the LinearProgram.
 func (lp *LinearProgram) String() string {
 	var sb strings.Builder
 
 	sb.WriteString(lp.Description + "\n")
+
+	if lp.Objective == nil {
+		sb.WriteString("<undefined objective>\n")
+		return sb.String()
+	}
 
 	if lp.Sense == LpMinimise {
 		sb.WriteString("Minimize: ")
@@ -21,9 +25,12 @@ func (lp *LinearProgram) String() string {
 
 	// Objective function
 	first := true
-	for i, coef := range lp.ObjectiveFunc.RawVector().Data {
+	for i, coef := range lp.Objective.RawVector().Data {
 		if coef == 0 {
 			continue
+		}
+		if lp.Sense == LpMinimise {
+			coef = -coef
 		}
 		if !first {
 			if coef > 0 {
@@ -37,10 +44,15 @@ func (lp *LinearProgram) String() string {
 			}
 			first = false
 		}
-		varName := lp.VariablesMap[i]
+		varName := lp.Vars[i]
 		sb.WriteString(fmt.Sprintf("%.2f * %s", math.Abs(coef), varName.Name))
 	}
 	sb.WriteString("\n")
+
+	if lp.Constraints == nil || lp.RHS == nil {
+		sb.WriteString("<no constraints>\n")
+		return sb.String()
+	}
 
 	// Constraints
 	sb.WriteString("Subject to:\n")
@@ -50,6 +62,9 @@ func (lp *LinearProgram) String() string {
 		first = true
 		for col := range lp.Constraints.RawMatrix().Cols {
 			coef := lp.Constraints.At(row, col)
+			if lp.Vars[col].IsSlack {
+				continue
+			}
 			if coef == 0 {
 				continue
 			}
@@ -65,11 +80,21 @@ func (lp *LinearProgram) String() string {
 				}
 				first = false
 			}
-			varName := lp.VariablesMap[col]
+			varName := lp.Vars[col]
 			sb.WriteString(fmt.Sprintf("%.2f * %s", math.Abs(coef), varName.Name))
 		}
 
-		sb.WriteString(" <= ")
+		// Constraint type and RHS
+		switch lp.ConTypes[row] {
+		case LpConstraintEQ:
+			sb.WriteString(" == ")
+		case LpConstraintGE:
+			sb.WriteString(" >= ")
+		case LpConstraintLE:
+			sb.WriteString(" <= ")
+		default:
+			sb.WriteString(" ? ")
+		}
 		sb.WriteString(fmt.Sprintf("%.3f\n", lp.RHS.AtVec(row)))
 	}
 
@@ -80,11 +105,11 @@ func (lp *LinearProgram) String() string {
 func (lp *LinearProgram) PrintSolution() {
 	fmt.Println(lp.Description)
 	fmt.Printf("SolutionStatus: %s\n", lp.Status.String())
-	fmt.Printf("ObjectiveValue: %.4f\n", lp.Solution)
+	fmt.Printf("ObjectiveValue: %.4f\n", lp.ObjectiveValue)
 
-	for i, v := range lp.VariablesMap {
-		if !lp.VariablesMap[i].IsSlack {
-			fmt.Printf("%s: %.4f\n", v.Name, lp.Variables.AtVec(i))
+	for i, v := range lp.Vars {
+		if !lp.Vars[i].IsSlack {
+			fmt.Printf("%s: %.4f\n", v.Name, lp.PrimalSolution.AtVec(i))
 		}
 	}
 }

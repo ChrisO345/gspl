@@ -24,7 +24,6 @@ func NewTerm(coefficient float64, variable LpVariable) LpTerm {
 // LpVariable represents a variable in a linear programming problem.
 type LpVariable struct {
 	Name         string
-	Value        float64
 	IsSlack      bool
 	IsArtificial bool
 	Category     LpCategory
@@ -36,9 +35,9 @@ func NewVariable(name string, category ...LpCategory) LpVariable {
 		panic("Only one LpCategory can be specified for a variable")
 	}
 	if len(category) == 0 {
-		return LpVariable{name, 0, false, false, LpCategoryContinuous} // Default to continuous variable
+		return LpVariable{name, false, false, LpCategoryContinuous} // Default to continuous variable
 	}
-	return LpVariable{name, 0, false, false, category[0]}
+	return LpVariable{name, false, false, category[0]}
 }
 
 // LpCategory represents the category of a linear programming variable, such as continuous, integer, or binary.
@@ -54,8 +53,8 @@ const (
 type LpSense int
 
 const (
-	LpMinimise = LpSense(-1)
-	LpMaximise = LpSense(1)
+	LpMinimise LpSense = iota
+	LpMaximise
 )
 
 // LpStatus represents the current status of solving the linear programming problem.
@@ -70,26 +69,23 @@ const (
 	LpStatusNotImplemented
 )
 
-// LpStatusMap maps LpStatus values to their string representations.
-var LpStatusMap = map[LpStatus]string{
-	LpStatusNotSolved:      "Not Solved",
-	LpStatusOptimal:        "Optimal",
-	LpStatusInfeasible:     "Infeasible",
-	LpStatusUnbounded:      "Unbounded",
-	LpStatusUndefined:      "Undefined",
-	LpStatusNotImplemented: "Not Implemented",
-}
-
 // String returns the string representation of the LpStatus.
 func (s LpStatus) String() string {
-	return LpStatusMap[s]
+	return [...]string{
+		"Not Solved",
+		"Optimal",
+		"Infeasible",
+		"Unbounded",
+		"Undefined",
+		"Not Implemented",
+	}[s]
 }
 
 // LpConstraintType represents the type of a constraint in a linear programming problem.
 type LpConstraintType int
 
 const (
-	LpConstraintLE LpConstraintType = -1
-	LpConstraintEQ LpConstraintType = 0
-	LpConstraintGE LpConstraintType = 1
+	LpConstraintLE LpConstraintType = iota - 1
+	LpConstraintEQ
+	LpConstraintGE
 )
