@@ -49,9 +49,6 @@ func main() {
 		lp.NewTerm(2, *x3),
 	}), lp.LpConstraintEQ, 26)
 
-	// Solve it
-	// solver.Solve(&example, solver.WithLogging(true)).PrintSolution()
-
 	fmt.Printf("%s\n", example.String())
 	solver.Solve(&example)
 }

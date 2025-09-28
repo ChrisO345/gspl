@@ -33,6 +33,8 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 		fmt.Println("Error during Solving:", err)
 	}
 
+	fmt.Printf("Solved LP: Status=%d, Objective=%.4f\n", prog.Status, prog.ObjectiveValue)
+
 	return nil
 }
 

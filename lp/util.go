@@ -29,7 +29,7 @@ func (lp *LinearProgram) String() string {
 		if coef == 0 {
 			continue
 		}
-		if lp.Sense == LpMinimise {
+		if lp.Sense == LpMaximise {
 			coef = -coef
 		}
 		if !first {

@@ -26,8 +26,8 @@ func (lp *LinearProgram) AddObjective(sense LpSense, expr LpExpression) {
 		}
 		coef := term.Coefficient
 
-		// Standard form requires maximisation, if minimisation, negate the coefficient
-		if sense == LpMinimise {
+		// Solver requires a minimisation problem, if maximising we invert the coefficients
+		if sense == LpMaximise {
 			coef = -coef
 		}
 
@@ -98,6 +98,13 @@ func (lp *LinearProgram) AddConstraint(expr LpExpression, conType LpConstraintTy
 		lp.Vars = append(lp.Vars, slackVar)
 
 		// Expand the objective function to include the new slack variable with coefficient 0
+		newObjective := mat.NewVecDense(lp.Objective.Len()+1, nil)
+		for i := 0; i < lp.Objective.Len(); i++ {
+			newObjective.SetVec(i, lp.Objective.AtVec(i))
+		}
+		newObjective.SetVec(newObjective.Len()-1, 0) // Coefficient of slack variable is 0
+		lp.Objective = newObjective
+
 		currentRowIndex := lp.Constraints.RawMatrix().Rows - 1
 
 		// Add a single new column for this constraint
