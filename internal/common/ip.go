@@ -1,5 +1,7 @@
 package common
 
+import "gonum.org/v1/gonum/mat"
+
 type IntegerProgram struct {
 	SCF *StandardComputationalForm
 
@@ -7,7 +9,7 @@ type IntegerProgram struct {
 	ConstraintDir []string
 
 	// Best known solution
-	BestSolution []float64
+	BestSolution *mat.VecDense // x*
 	BestObj      float64
 
 	// User-supplied strategy functions
@@ -18,6 +20,8 @@ type IntegerProgram struct {
 
 // FIXME: This is just a placeholder struct for Node. This will change.
 type Node struct {
+	SCF *StandardComputationalForm
+
 	ID       int
 	ParentID int
 	Depth    int
