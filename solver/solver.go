@@ -22,10 +22,12 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 		}
 
 		if prog.Sense == lp.LpMaximise {
-			prog.ObjectiveValue = -prog.ObjectiveValue
+			ip.BestObj = -ip.BestObj
 		}
+		prog.ObjectiveValue = ip.BestObj
 
-		fmt.Printf("[DEBUG] Solved IP: Status=%s, Objective=%.4f\n", prog.Status, prog.ObjectiveValue)
+		fmt.Printf("[DEBUG] Solved IP: Status=%s, Objective=%.4f\n", prog.Status, ip.BestObj)
+		fmt.Printf("[DEBUG] Primal Solution: %v\n", ip.BestSolution.RawVector().Data)
 
 		return nil
 	}
@@ -46,6 +48,16 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 
 // newSCF creates a new SCF instance for the linear program
 func newSCF(prog *lp.LinearProgram) *common.StandardComputationalForm {
+	// slackIndices := int{}
+	slackIndices := make([]int, len(prog.Vars))
+	for i, constr := range prog.Vars {
+		if constr.IsSlack {
+			slackIndices[i] = i
+		} else {
+			slackIndices[i] = -1
+		}
+	}
+
 	return &common.StandardComputationalForm{
 		Objective:   prog.Objective,
 		Constraints: prog.Constraints,
@@ -56,6 +68,7 @@ func newSCF(prog *lp.LinearProgram) *common.StandardComputationalForm {
 		// Link back to the original problem
 		ObjectiveValue: &prog.ObjectiveValue,
 		Status:         &prog.Status,
+		SlackIndices:   slackIndices,
 	}
 }
 

@@ -24,7 +24,7 @@ func main() {
 		lp.NewTerm(1, variables[1]),
 	}
 	terms3 := []lp.LpTerm{
-		lp.NewTerm(1, variables[0]),
+		lp.NewTerm(0.67, variables[0]),
 		lp.NewTerm(0, variables[1]),
 	}
 

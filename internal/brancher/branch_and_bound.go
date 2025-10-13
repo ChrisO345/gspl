@@ -8,63 +8,43 @@ import (
 	"github.com/chriso345/gspl/internal/simplex"
 )
 
-func BranchAndBound(ip *common.IntegerProgram) error {
-	// Define the strategies to be used in tree traversal
-	defineStrategies(ip)
-
-	// Solve at the root
-	rootNode := &common.Node{
-		SCF: ip.SCF,
-		// ID:       0,
-		// ParentID: -1,
-		// Depth:    0,
-	}
-
-	err := simplex.Simplex(rootNode.SCF)
+func branchAndBound(ip *common.IntegerProgram, rootNode *common.Node) error {
+	nodes, err := branchFunc(rootNode)
 	if err != nil {
-		return fmt.Errorf("error solving root node: %v", err)
+		return fmt.Errorf("error in branching function: %v", err)
 	}
 
-	ip.BestObj = *rootNode.SCF.ObjectiveValue
-	ip.BestSolution = rootNode.SCF.PrimalSolution
+	for _, node := range nodes {
+		node.Depth = rootNode.Depth + 1
+		fmt.Printf("[DEBUG] Branching to new node at depth %d\n", node.Depth)
+		err := simplex.Simplex(node.SCF)
+		if err != nil {
+			return fmt.Errorf("error solving child node: %v", err)
+		}
 
-	// If the root node is not optimal, the IP is infeasible or unbounded
-	if *rootNode.SCF.Status != common.SolverStatusOptimal {
-		*ip.SCF.Status = *rootNode.SCF.Status
-		return nil
-	}
+		if *node.SCF.Status != common.SolverStatusOptimal {
+			// Node is infeasible, or unbounded, so it can be pruned
+			continue
+		}
 
-	// Check if the root solution is integer feasible
-	if rootNode.IsInteger {
-		*ip.SCF.Status = common.SolverStatusOptimal
-		return nil
+		node.IsInteger = isIntegerFeasible(node.SCF)
+		fmt.Printf("[DEBUG] Node Objective: %.4f, IsInteger: %v\n\n", *node.SCF.ObjectiveValue, node.IsInteger)
+		if node.IsInteger {
+			objVal := *node.SCF.ObjectiveValue
+			if objVal < ip.BestObj {
+				ip.BestObj = objVal
+				ip.BestSolution = node.SCF.PrimalSolution
+				fmt.Printf("[DEBUG] New Best Obj: %.4f\n", ip.BestObj)
+			}
+			continue
+		}
+
+		// If not integer feasible, continue branching
+		err = branchAndBound(ip, node)
+		if err != nil {
+			return err
+		}
 	}
 
 	return errors.New("Branch and Bound algorithm not yet implemented")
 }
-
-// defineStrategies sets the strategies to be used in the Branch and Bound algorithm
-func defineStrategies(ip *common.IntegerProgram) {
-	if ip.Branch == nil {
-		branchFunc = DefaultBranch
-	} else {
-		branchFunc = ip.Branch
-	}
-
-	if ip.Heuristic == nil {
-		heuristicFunc = DefaultHeuristic
-	} else {
-		heuristicFunc = ip.Heuristic
-	}
-
-	if ip.Cut == nil {
-		cutFunc = DefaultCut
-	} else {
-		cutFunc = ip.Cut
-	}
-}
-
-// Strategy function variables
-var branchFunc common.BranchFunc
-var heuristicFunc common.HeuristicFunc
-var cutFunc common.CutFunc
