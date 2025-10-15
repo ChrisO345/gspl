@@ -49,6 +49,11 @@ func main() {
 		lp.NewTerm(2, *x3),
 	}), lp.LpConstraintEQ, 26)
 
+	// Print the current problem
 	fmt.Printf("%s\n", example.String())
+
+	// Solve it
 	solver.Solve(&example)
+	fmt.Printf("Optimal Objective Value: %.2f\n", example.ObjectiveValue)
+	fmt.Printf("Primal Solution: %v\n", example.PrimalSolution.RawVector().Data)
 }

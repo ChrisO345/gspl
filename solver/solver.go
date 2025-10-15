@@ -7,10 +7,16 @@ import (
 	"github.com/chriso345/gspl/internal/common"
 	"github.com/chriso345/gspl/internal/simplex"
 	"github.com/chriso345/gspl/lp"
+	"gonum.org/v1/gonum/mat"
 )
 
 // Solve solves the given linear program and returns the optimal objective value
 func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
+	// Apply options
+	options := NewSolverConfig(opts...)
+
+	tol := options.Tolerance
+
 	if hasIPConstraints(prog) {
 
 		ip := newIP(prog)
@@ -25,9 +31,14 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 			ip.BestObj = -ip.BestObj
 		}
 		prog.ObjectiveValue = ip.BestObj
-
-		fmt.Printf("[DEBUG] Solved IP: Status=%s, Objective=%.4f\n", prog.Status, ip.BestObj)
-		fmt.Printf("[DEBUG] Primal Solution: %v\n", ip.BestSolution.RawVector().Data)
+		prog.PrimalSolution = mat.NewVecDense(ip.SCF.NumPrimals, nil)
+		for i := range ip.SCF.NumPrimals {
+			item := ip.BestSolution.AtVec(i)
+			if item < tol && item > -tol {
+				continue
+			}
+			prog.PrimalSolution.SetVec(i, item)
+		}
 
 		return nil
 	}
@@ -41,20 +52,35 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 		fmt.Println("Error during Solving:", err)
 	}
 
-	fmt.Printf("[DEBUG] Solved LP: Status=%s, Objective=%.4f\n", prog.Status, prog.ObjectiveValue)
+	// Copy back the results to the original problem
+	if prog.Sense == lp.LpMaximise {
+		*scf.ObjectiveValue = -*scf.ObjectiveValue
+	}
+
+	// Remove any artificials and copy the solution back
+	prog.ObjectiveValue = *scf.ObjectiveValue
+	prog.PrimalSolution = mat.NewVecDense(scf.NumPrimals, nil)
+	for i := range scf.NumPrimals {
+		item := scf.PrimalSolution.AtVec(i)
+		if item < tol && item > -tol {
+			continue
+		}
+		prog.PrimalSolution.SetVec(i, item)
+	}
 
 	return nil
 }
 
 // newSCF creates a new SCF instance for the linear program
 func newSCF(prog *lp.LinearProgram) *common.StandardComputationalForm {
-	// slackIndices := int{}
 	slackIndices := make([]int, len(prog.Vars))
+	numPrimals := 0
 	for i, constr := range prog.Vars {
 		if constr.IsSlack {
 			slackIndices[i] = i
 		} else {
 			slackIndices[i] = -1
+			numPrimals++
 		}
 	}
 
@@ -69,6 +95,7 @@ func newSCF(prog *lp.LinearProgram) *common.StandardComputationalForm {
 		ObjectiveValue: &prog.ObjectiveValue,
 		Status:         &prog.Status,
 		SlackIndices:   slackIndices,
+		NumPrimals:     numPrimals,
 	}
 }
 

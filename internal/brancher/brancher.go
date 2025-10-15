@@ -25,17 +25,17 @@ func BranchAndBound(ip *common.IntegerProgram) error {
 		return fmt.Errorf("error solving root node: %v", err)
 	}
 
-	ip.BestObj = *rootNode.SCF.ObjectiveValue
-	ip.BestSolution = rootNode.SCF.PrimalSolution
-	rootNode.IsInteger = isIntegerFeasible(rootNode.SCF)
-
 	// If the root node is not optimal, the IP is infeasible or unbounded
 	if *rootNode.SCF.Status != common.SolverStatusOptimal {
 		*ip.SCF.Status = *rootNode.SCF.Status
 		return nil
 	}
 
-	fmt.Printf("[DEBUG] Primal Solution: %v\n", rootNode.SCF.PrimalSolution)
+	ip.BestObj = *rootNode.SCF.ObjectiveValue
+	ip.BestSolution = rootNode.SCF.PrimalSolution
+	rootNode.IsInteger = isIntegerFeasible(rootNode.SCF)
+
+	// fmt.Printf("[DEBUG] Primal Solution: %v\n", rootNode.SCF.PrimalSolution) // FIXME: remove this, add a debug option within solver options
 
 	// Check if the root solution is integer feasible
 	if rootNode.IsInteger {

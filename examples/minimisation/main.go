@@ -75,4 +75,6 @@ func main() {
 
 	fmt.Printf("%s\n", minProg.String())
 	solver.Solve(&minProg)
+	fmt.Printf("Optimal Objective Value: %.2f\n", minProg.ObjectiveValue)
+	fmt.Printf("Primal Solution: %v\n", minProg.PrimalSolution.RawVector().Data)
 }

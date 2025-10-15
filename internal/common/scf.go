@@ -15,6 +15,7 @@ type StandardComputationalForm struct {
 	ObjectiveValue *float64
 	Status         *SolverStatus // Optimal, Infeasible, Unbounded, etc.
 	SlackIndices   []int         // Indices of slack variables in the solution
+	NumPrimals     int           // Number of primal variables (non-slack)
 }
 
 // Copy creates a deep copy of the SCF
@@ -27,6 +28,7 @@ func (scf *StandardComputationalForm) Copy() *StandardComputationalForm {
 		ObjectiveValue: scf.ObjectiveValue,
 		Status:         scf.Status,
 		SlackIndices:   scf.SlackIndices,
+		NumPrimals:     scf.NumPrimals,
 	}
 }
 

@@ -61,6 +61,12 @@ func Simplex(scf *common.StandardComputationalForm) error {
 	}
 
 	// Phase 2: Set up the original problem
+	// Remove artificial variables from basis if their xb = 0
+	err = removeArtificialFromBasis(sm)
+	if err != nil {
+		*scf.Status = common.SolverStatusInfeasible
+		return fmt.Errorf("error removing artificial variables from basis: %w", err)
+	}
 
 	// OPTIM: Is the A matrix changed by RSM? if not we can skip this reconstruction
 	sm.A = mat.NewDense(m, n+m, nil)
@@ -191,6 +197,10 @@ func RSM(sm *simplexMethod, phase int) error {
 		if fl.r == -1 {
 			// Unbounded solution
 			sm.rsmResult.flag = common.SolverStatusUnbounded
+			// Set primal solution vector to zero
+			sm.rsmResult.x = mat.NewVecDense(n, nil)
+			fmt.Printf("%v\n", sm.rsmResult.x)
+			sm.rsmResult.value = 0.
 			return nil
 		}
 
@@ -303,4 +313,40 @@ func updateB(bu *bUpdateStruct) error {
 	bu.cb.SetVec(bu.r, bu.cs)
 
 	return nil
+}
+
+// removeArtificialFromBasis removes artificial variables from the basis before Phase 2.
+// If an artificial variable has a positive value, it returns an error (infeasible LP).
+func removeArtificialFromBasis(sm *simplexMethod) error {
+	for i := 0; i < sm.m; i++ {
+		index := int(sm.rsmResult.indices.AtVec(i))
+		if index >= sm.n { // artificial variable
+			if math.Abs(sm.rsmResult.x.AtVec(index)) < 1e-8 {
+				// Replace with a non-basic original variable
+				replaced := false
+				for j := 0; j < sm.n; j++ {
+					if !contains(sm.rsmResult.indices, j) {
+						sm.rsmResult.indices.SetVec(i, float64(j))
+						replaced = true
+						break
+					}
+				}
+				if !replaced {
+					return errors.New("cannot remove artificial variable from basis: no non-basic original variable available")
+				}
+			} else {
+				return errors.New("LP is infeasible: artificial variable in basis with positive value")
+			}
+		}
+	}
+	return nil
+}
+
+func contains(vec *mat.VecDense, val int) bool {
+	for i := 0; i < vec.Len(); i++ {
+		if int(vec.AtVec(i)) == val {
+			return true
+		}
+	}
+	return false
 }
