@@ -27,9 +27,6 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 			fmt.Println("Error during Solving:", err)
 		}
 
-		if prog.Sense == lp.LpMaximise {
-			ip.BestObj = -ip.BestObj
-		}
 		prog.ObjectiveValue = ip.BestObj
 		prog.PrimalSolution = mat.NewVecDense(ip.SCF.NumPrimals, nil)
 		for i := range ip.SCF.NumPrimals {
@@ -50,11 +47,6 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 	err := simplex.Simplex(scf)
 	if err != nil {
 		fmt.Println("Error during Solving:", err)
-	}
-
-	// Copy back the results to the original problem
-	if prog.Sense == lp.LpMaximise {
-		*scf.ObjectiveValue = -*scf.ObjectiveValue
 	}
 
 	// Remove any artificials and copy the solution back
