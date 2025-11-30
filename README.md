@@ -32,61 +32,61 @@ go get github.com/chriso345/gspl
 package main
 
 import (
-	"fmt"
+  "fmt"
 
-	"github.com/chriso345/gspl/lp"
-	"github.com/chriso345/gspl/solver"
+  "github.com/chriso345/gspl/lp"
+  "github.com/chriso345/gspl/solver"
 )
 
 func main() {
-	// Create decision variables
-	variables := []lp.LpVariable{
-		lp.NewVariable("x1"),
-		lp.NewVariable("x2"),
-		lp.NewVariable("x3"),
-	}
+  // Create decision variables
+  variables := []lp.LpVariable{
+    lp.NewVariable("x1"),
+    lp.NewVariable("x2"),
+  lp.NewVariable("x3"),
+  }
 
-	x1 := &variables[0]
-	x2 := &variables[1]
-	x3 := &variables[2]
+  x1 := &variables[0]
+  x2 := &variables[1]
+  x3 := &variables[2]
 
-	// Objective function: Minimize -6 * x1 + 7 * x2 + 4 * x3
-	objective := lp.NewExpression([]lp.LpTerm{
-		lp.NewTerm(-6, *x1),
-		lp.NewTerm(7, *x2),
-		lp.NewTerm(4, *x3),
-	})
+  // Objective function: Minimize -6 * x1 + 7 * x2 + 4 * x3
+  objective := lp.NewExpression([]lp.LpTerm{
+    lp.NewTerm(-6, *x1),
+    lp.NewTerm(7, *x2),
+    lp.NewTerm(4, *x3),
+  })
 
-	// Set up the LP problem
-	example := lp.NewLinearProgram("README Example", variables)
-	example.AddObjective(lp.LpMinimise, objective)
+  // Set up the LP problem
+  example := lp.NewLinearProgram("README Example", variables)
+  example.AddObjective(lp.LpMinimise, objective)
 
-	// Add constraints
-	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
-		lp.NewTerm(2, *x1),
-		lp.NewTerm(5, *x2),
-		lp.NewTerm(-1, *x3),
-	}), lp.LpConstraintLE, 18)
+  // Add constraints
+  example.AddConstraint(lp.NewExpression([]lp.LpTerm{
+    lp.NewTerm(2, *x1),
+    lp.NewTerm(5, *x2),
+    lp.NewTerm(-1, *x3),
+  }), lp.LpConstraintLE, 18)
 
-	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
-		lp.NewTerm(1, *x1),
-		lp.NewTerm(-1, *x2),
-		lp.NewTerm(-2, *x3),
-	}), lp.LpConstraintLE, -14)
+  example.AddConstraint(lp.NewExpression([]lp.LpTerm{
+    lp.NewTerm(1, *x1),
+    lp.NewTerm(-1, *x2),
+    lp.NewTerm(-2, *x3),
+  }), lp.LpConstraintLE, -14)
 
-	example.AddConstraint(lp.NewExpression([]lp.LpTerm{
-		lp.NewTerm(3, *x1),
-		lp.NewTerm(2, *x2),
-		lp.NewTerm(2, *x3),
-	}), lp.LpConstraintEQ, 26)
+  example.AddConstraint(lp.NewExpression([]lp.LpTerm{
+    lp.NewTerm(3, *x1),
+    lp.NewTerm(2, *x2),
+    lp.NewTerm(2, *x3),
+  }), lp.LpConstraintEQ, 26)
 
-	// Print the current problem
-	fmt.Printf("%s\n", example.String())
+  // Print the current problem
+  fmt.Printf("%s\n", example.String())
 
-	// Solve it
-	solver.Solve(&example)
-	fmt.Printf("Optimal Objective Value: %.2f\n", example.ObjectiveValue)
-	fmt.Printf("Primal Solution: %v\n", example.PrimalSolution.RawVector().Data)
+  // Solve it
+  solver.Solve(&example)
+  fmt.Printf("Optimal Objective Value: %.2f\n", example.ObjectiveValue)
+  fmt.Printf("Primal Solution: %v\n", example.PrimalSolution.RawVector().Data)
 }
 ```
 
@@ -116,8 +116,8 @@ Create decision variables as a slice:
 
 ```go
 variables := []lp.LpVariable{
-    lp.NewVariable("x1"),
-    lp.NewVariable("x2"),
+  lp.NewVariable("x1"),
+  lp.NewVariable("x2"),
 }
 ```
 
@@ -131,8 +131,8 @@ Forcing integer constraints is done at the variable level:
 
 ```go
 variables := []lp.LpVariable{
-    lp.NewVariable("x1", lp.LpCategoryInteger),
-    lp.NewVariable("x2", lp.LpCategoryInteger),
+  lp.NewVariable("x1", lp.LpCategoryInteger),
+  lp.NewVariable("x2", lp.LpCategoryInteger),
 }
 ```
 
@@ -142,8 +142,8 @@ Build the objective using terms:
 
 ```go
 objective := lp.NewExpression([]lp.LpTerm{
-    lp.NewTerm(5, *x1),
-    lp.NewTerm(3, *x2),
+  lp.NewTerm(5, *x1),
+  lp.NewTerm(3, *x2),
 })
 ```
 
@@ -160,8 +160,8 @@ Each constraint uses an expression, a comparison type, and a right-hand side:
 
 ```go
 lp.AddConstraint(lp.NewExpression([]lp.LpTerm{
-    lp.NewTerm(2, *x1),
-    lp.NewTerm(3, *x2),
+  lp.NewTerm(2, *x1),
+  lp.NewTerm(3, *x2),
 }), lp.LpConstraintLE, 10)
 ```
 

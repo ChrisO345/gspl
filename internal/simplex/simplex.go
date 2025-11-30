@@ -48,6 +48,9 @@ func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig)
 	sm.B = matrix.ExtractColumns(sm.A, sm.cb)
 	sm.b = scf.RHS
 
+	// Keep original constraints pointer so we can detect changes later (cheap check)
+	origConstraints := scf.Constraints
+
 	// Run Phase 1 of the RSM
 	err := RSM(sm, 1, config)
 	if err != nil {
@@ -68,18 +71,20 @@ func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig)
 		return fmt.Errorf("error removing artificial variables from basis: %w", err)
 	}
 
-	// OPTIM: Is the A matrix changed by RSM? if not we can skip this reconstruction
-	sm.A = mat.NewDense(m, n+m, nil)
-	for i := range m {
-		for j := range n {
-			sm.A.Set(i, j, scf.Constraints.At(i, j))
-		}
-		for j := range m {
-			sm.A.Set(i, n+j, I.At(i, j))
+	// This _should_ always be true, but just in case
+	if scf.Constraints != origConstraints {
+		sm.A = mat.NewDense(m, n+m, nil)
+		for i := range m {
+			for j := range n {
+				sm.A.Set(i, j, scf.Constraints.At(i, j))
+			}
+			for j := range m {
+				sm.A.Set(i, n+j, I.At(i, j))
+			}
 		}
 	}
 
-	sm.c = mat.NewVecDense(n+m, nil) // FIXME:???
+	sm.c = mat.NewVecDense(n+m, nil)
 	for i := range n {
 		sm.c.SetVec(i, scf.Objective.AtVec(i))
 	}
@@ -89,7 +94,8 @@ func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig)
 
 	sm.cb = sm.rsmResult.indices
 	sm.B = matrix.ExtractColumns(sm.A, sm.cb)
-	sm.b = scf.RHS // Should be unchanged? OPTIM: reuse from Phase 1?
+	// Reuse RHS from Phase 1 (sm.b already points to scf.RHS) to avoid extra allocations
+	sm.b = scf.RHS
 
 	// Run Phase 2 of the RSM
 	err = RSM(sm, 2, config)
@@ -122,7 +128,7 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 	}
 
 	// Initialise other variables
-	B := sm.B // OPTIM: do we need to copy this?
+	B := sm.B // RSM mutates B in-place and owns the basis; updateB writes into this matrix
 	cb := mat.NewVecDense(sm.m, nil)
 	for i := range sm.m {
 		index := int(sm.rsmResult.indices.AtVec(i))
@@ -225,22 +231,25 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 
 func findEnter(fe *enteringVariable) error {
 	fe.s = -1
-	fe.as = nil
 	fe.cs = 0.
 	minrc := math.Inf(1)
 	tol := -fe.epsilon
 
 	n := fe.isbasic.Len()
+	m, _ := fe.A.Dims()
+
+	// Reuse or allocate the 'as' vector once per call
+	if fe.as == nil {
+		fe.as = mat.NewVecDense(m, nil)
+	}
 
 	for j := range n {
 		if fe.isbasic.AtVec(j) == 0 {
-			m, _ := fe.A.Dims()
-			aj := mat.NewVecDense(m, nil)
+			// Compute dot product without allocating a temporary vector
+			dot := 0.0
 			for i := range m {
-				aj.SetVec(i, fe.A.At(i, j))
+				dot += fe.pi.AtVec(i) * fe.A.At(i, j)
 			}
-
-			dot := mat.Dot(fe.pi, aj)
 			rc := fe.c.AtVec(j) - dot
 
 			if rc < minrc {
@@ -248,8 +257,7 @@ func findEnter(fe *enteringVariable) error {
 				fe.s = j
 				fe.cs = fe.c.AtVec(j)
 
-				// OPTIM: don't reallocate this every loop...
-				fe.as = mat.NewVecDense(m, nil)
+				// Reuse the preallocated as vector
 				for i := range m {
 					fe.as.SetVec(i, fe.A.At(i, j))
 				}
@@ -258,9 +266,10 @@ func findEnter(fe *enteringVariable) error {
 	}
 
 	if minrc >= tol {
-		m, _ := fe.A.Dims()
 		fe.s = -1
-		fe.as = mat.NewVecDense(m, nil)
+		for i := range m {
+			fe.as.SetVec(i, 0)
+		}
 		fe.cs = 0.
 	}
 
