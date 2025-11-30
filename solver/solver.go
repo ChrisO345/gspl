@@ -22,7 +22,7 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 		ip := newIP(prog)
 
 		// Call the Integer Programming solver
-		err := brancher.BranchAndBound(ip)
+		err := brancher.BranchAndBound(ip, options)
 		if err != nil {
 			fmt.Println("Error during Solving:", err)
 		}
@@ -44,9 +44,8 @@ func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
 	scf := newSCF(prog)
 
 	// Call the Simplex solver
-	err := simplex.Simplex(scf)
-	if err != nil {
-		fmt.Println("Error during Solving:", err)
+	if err := simplex.Simplex(scf, options); err != nil {
+		return fmt.Errorf("simplex failed: %w", err)
 	}
 
 	// Remove any artificials and copy the solution back

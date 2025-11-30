@@ -6,4 +6,3 @@
 //
 // It is intended for internal use within the gspl project.
 package matrix
-

@@ -8,7 +8,7 @@ import (
 	"github.com/chriso345/gspl/internal/simplex"
 )
 
-func BranchAndBound(ip *common.IntegerProgram) error {
+func BranchAndBound(ip *common.IntegerProgram, config *common.SolverConfig) error {
 	// Define the strategies to be used in tree traversal
 	defineStrategies(ip)
 
@@ -20,7 +20,7 @@ func BranchAndBound(ip *common.IntegerProgram) error {
 		// Depth:    0,
 	}
 
-	err := simplex.Simplex(rootNode.SCF)
+	err := simplex.Simplex(rootNode.SCF, config)
 	if err != nil {
 		return fmt.Errorf("error solving root node: %v", err)
 	}
@@ -35,7 +35,9 @@ func BranchAndBound(ip *common.IntegerProgram) error {
 	ip.BestSolution = rootNode.SCF.PrimalSolution
 	rootNode.IsInteger = isIntegerFeasible(rootNode.SCF)
 
-	// fmt.Printf("[DEBUG] Primal Solution: %v\n", rootNode.SCF.PrimalSolution) // FIXME: remove this, add a debug option within solver options
+	if config.Logging {
+		fmt.Printf("[DEBUG] Primal Solution: %v\n", rootNode.SCF.PrimalSolution)
+	}
 
 	// Check if the root solution is integer feasible
 	if rootNode.IsInteger {
@@ -43,7 +45,7 @@ func BranchAndBound(ip *common.IntegerProgram) error {
 		return nil
 	}
 
-	err = branchAndBound(ip, rootNode)
+	err = branchAndBound(ip, rootNode, config)
 
 	ip.SCF.ObjectiveValue = &ip.BestObj
 	ip.SCF.PrimalSolution = ip.BestSolution

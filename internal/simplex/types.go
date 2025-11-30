@@ -27,13 +27,14 @@ type rsmResult struct {
 	flag    common.SolverStatus
 }
 
-// TODO: rename
-type enterStruct struct {
+type enteringVariable struct {
 	A  *mat.Dense    // Pointer to the simpleMethod.A
 	pi *mat.VecDense // Pointer to the rsmResult.pi
 	c  *mat.VecDense // Pointer to the simpleMethod.c
 
 	isbasic *mat.VecDense
+
+	epsilon float64
 
 	// Results
 	as *mat.VecDense
@@ -41,7 +42,7 @@ type enterStruct struct {
 	s  int
 }
 
-type leaveStruct struct {
+type leavingVariable struct {
 	B       *mat.Dense    // Pointer to the simpleMethod.B
 	indices *mat.VecDense // Pointer to the rsmResult.indices
 	as      *mat.VecDense
@@ -52,8 +53,7 @@ type leaveStruct struct {
 	r int
 }
 
-// TODO: replace with just passing above two structs + additional fields?
-type bUpdateStruct struct {
+type basisUpdate struct {
 	BMat    *mat.Dense
 	indices *mat.VecDense
 	cb      *mat.VecDense

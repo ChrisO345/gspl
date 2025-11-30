@@ -42,11 +42,13 @@ func TestFindEnterSmall(t *testing.T) {
 	pi := mat.NewVecDense(2, []float64{0, 0})
 	isbasic := mat.NewVecDense(2, []float64{0, 1})
 
-	fe := &enterStruct{
+	fe := &enteringVariable{
 		A:       A,
 		c:       c,
 		pi:      pi,
 		isbasic: isbasic,
+
+		epsilon: 1e-5,
 	}
 
 	assert.Nil(t, findEnter(fe))
@@ -63,7 +65,7 @@ func TestFindLeaveSmall(t *testing.T) {
 	xb := mat.NewVecDense(2, []float64{5, 3})
 	as := mat.NewVecDense(2, []float64{1, 1})
 
-	fl := &leaveStruct{
+	fl := &leavingVariable{
 		B:       B,
 		indices: indices,
 		xb:      xb,

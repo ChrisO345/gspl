@@ -1,5 +1,9 @@
 package common
 
+import (
+	"fmt"
+)
+
 // SolverConfig holds the actual configuration with no pointers.
 type SolverConfig struct {
 	Logging       bool
@@ -14,6 +18,8 @@ type SolverConfig struct {
 
 	// Not Yet Implemented
 	Threads int
+
+	Debug bool
 }
 
 // DefaultSolverConfig returns the default solver configuration.
@@ -29,12 +35,29 @@ func DefaultSolverConfig() *SolverConfig {
 		Cut:            nil, // Default cutting planes defined in `brancher`
 
 		Threads: 0, // 0 means use all available cores
+
+		Debug: false,
 	}
 }
 
-// validateSolverConfig checks if the SolverConfig is valid.
+// ValidateSolverConfig checks if the SolverConfig is valid.
 func ValidateSolverConfig(cfg *SolverConfig) error {
-	// TODO: Impement validation logic
-	_ = cfg
+	if cfg == nil {
+		return fmt.Errorf("solver config is nil")
+	}
+	if cfg.Tolerance <= 0 {
+		return fmt.Errorf("tolerance must be > 0")
+	}
+	if cfg.MaxIterations <= 0 {
+		return fmt.Errorf("max iterations must be > 0")
+	}
+	if cfg.GapSensitivity < 0 || cfg.GapSensitivity > 1 {
+		return fmt.Errorf("gap sensitivity must be between 0 and 1")
+	}
+
+	if cfg.Debug {
+		cfg.Logging = true
+	}
+
 	return nil
 }

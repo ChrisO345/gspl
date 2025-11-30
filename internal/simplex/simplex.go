@@ -10,7 +10,7 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-func Simplex(scf *common.StandardComputationalForm) error {
+func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig) error {
 	m, n := scf.Constraints.Dims()
 	sm := &simplexMethod{
 		m: m,
@@ -49,13 +49,13 @@ func Simplex(scf *common.StandardComputationalForm) error {
 	sm.b = scf.RHS
 
 	// Run Phase 1 of the RSM
-	err := RSM(sm, 1)
+	err := RSM(sm, 1, config)
 	if err != nil {
 		return fmt.Errorf("error in Phase 1 of Simplex: %w", err)
 	}
 
 	// Check infeasibility
-	if sm.rsmResult.flag == common.SolverStatusOptimal && sm.rsmResult.value > 1e-8 { // TODO: replace with tolerance option
+	if sm.rsmResult.flag == common.SolverStatusOptimal && sm.rsmResult.value > config.Tolerance {
 		*scf.Status = common.SolverStatusInfeasible
 		return nil
 	}
@@ -92,7 +92,7 @@ func Simplex(scf *common.StandardComputationalForm) error {
 	sm.b = scf.RHS // Should be unchanged? OPTIM: reuse from Phase 1?
 
 	// Run Phase 2 of the RSM
-	err = RSM(sm, 2)
+	err = RSM(sm, 2, config)
 	if err != nil {
 		return fmt.Errorf("error in Phase 2 of Simplex: %w", err)
 	}
@@ -105,7 +105,7 @@ func Simplex(scf *common.StandardComputationalForm) error {
 	return nil
 }
 
-func RSM(sm *simplexMethod, phase int) error {
+func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 	_maxIter := 1000 // Simple safeguard
 
 	n := sm.n
@@ -148,11 +148,13 @@ func RSM(sm *simplexMethod, phase int) error {
 			return fmt.Errorf("error solving for dual variables: %w", err)
 		}
 
-		fe := enterStruct{
+		fe := enteringVariable{
 			A:       sm.A,
 			pi:      sm.rsmResult.pi,
 			c:       sm.c,
 			isbasic: mat.NewVecDense(n, nil),
+
+			epsilon: config.Tolerance,
 		}
 
 		for i := range sm.m {
@@ -180,7 +182,7 @@ func RSM(sm *simplexMethod, phase int) error {
 		}
 
 		// Finding the leaving variable
-		fl := leaveStruct{
+		fl := leavingVariable{
 			B:       B,
 			indices: sm.rsmResult.indices,
 			as:      fe.as,
@@ -205,7 +207,7 @@ func RSM(sm *simplexMethod, phase int) error {
 		}
 
 		// Update B, cb, and indices
-		bu := bUpdateStruct{
+		bu := basisUpdate{
 			BMat:    B,
 			indices: sm.rsmResult.indices,
 			cb:      cb,
@@ -221,12 +223,12 @@ func RSM(sm *simplexMethod, phase int) error {
 	return errors.New("max iterations reached in RSM")
 }
 
-func findEnter(fe *enterStruct) error {
+func findEnter(fe *enteringVariable) error {
 	fe.s = -1
 	fe.as = nil
 	fe.cs = 0.
 	minrc := math.Inf(1)
-	tol := -1e-6 // TODO: replace with tolerance option
+	tol := -fe.epsilon
 
 	n := fe.isbasic.Len()
 
@@ -265,7 +267,7 @@ func findEnter(fe *enterStruct) error {
 	return nil
 }
 
-func findLeave(fl *leaveStruct) error {
+func findLeave(fl *leavingVariable) error {
 	fl.r = -1
 
 	var Binv mat.Dense
@@ -302,7 +304,7 @@ func findLeave(fl *leaveStruct) error {
 	return nil
 }
 
-func updateB(bu *bUpdateStruct) error {
+func updateB(bu *basisUpdate) error {
 	m, _ := bu.BMat.Dims()
 
 	for i := range m {

@@ -22,7 +22,7 @@ func (lp *LinearProgram) AddObjective(sense LpSense, expr LpExpression) {
 			}
 		}
 		if varIndex == -1 {
-			panic("variable in objective function not found in LP variables") // TODO: better error handling
+			panic(fmt.Sprintf("variable in objective function not found in LP variables: %s", term.Variable.Name))
 		}
 		coef := term.Coefficient
 
@@ -38,7 +38,7 @@ func (lp *LinearProgram) AddObjective(sense LpSense, expr LpExpression) {
 // AddConstraint adds a new constraint to the LP model.
 func (lp *LinearProgram) AddConstraint(expr LpExpression, conType LpConstraintType, rhs float64) {
 	if lp.Objective == nil {
-		panic("objective function must be defined before adding constraints") // TODO: better error handling
+		panic("objective function must be defined before adding constraints")
 	}
 
 	// Create a new row for the constraint
@@ -67,7 +67,7 @@ func (lp *LinearProgram) AddConstraint(expr LpExpression, conType LpConstraintTy
 			}
 		}
 		if varIndex == -1 {
-			panic("variable in constraint not found in LP variables") // TODO: better error handling
+			panic(fmt.Sprintf("variable in constraint not found in LP variables: %s", term.Variable.Name))
 		}
 
 		if flipped {
