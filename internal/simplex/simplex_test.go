@@ -27,10 +27,11 @@ func TestRemoveArtificialFromBasis(t *testing.T) {
 
 	assert.Nil(t, removeArtificialFromBasis(sm))
 
-	sm.rsmResult.x.SetVec(0, 1e-2)
-	assert.Safe(t, func() {
-		removeArtificialFromBasis(sm)
-	})
+	sm.x.SetVec(0, 1e-2)
+	err := removeArtificialFromBasis(sm)
+	if err != nil {
+		t.Fatalf("removeArtificialFromBasis returned error: %v", err)
+	}
 }
 
 func TestFindEnterSmall(t *testing.T) {

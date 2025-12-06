@@ -75,20 +75,9 @@ func defineStrategies(ip *common.IntegerProgram) {
 		branchFunc = ip.Branch
 	}
 
-	if ip.Heuristic == nil {
-		heuristicFunc = DefaultHeuristic
-	} else {
-		heuristicFunc = ip.Heuristic
-	}
-
-	if ip.Cut == nil {
-		cutFunc = DefaultCut
-	} else {
-		cutFunc = ip.Cut
-	}
+	// Heuristic and Cut functions are read directly from the IntegerProgram where required.
+	// If not provided, callers should use DefaultHeuristic/DefaultCut explicitly.
 }
 
 // Strategy function variables
 var branchFunc common.BranchFunc
-var heuristicFunc common.HeuristicFunc
-var cutFunc common.CutFunc

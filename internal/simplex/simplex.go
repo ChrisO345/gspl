@@ -58,7 +58,7 @@ func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig)
 	}
 
 	// Check infeasibility
-	if sm.rsmResult.flag == common.SolverStatusOptimal && sm.rsmResult.value > config.Tolerance {
+	if sm.flag == common.SolverStatusOptimal && sm.value > config.Tolerance {
 		*scf.Status = common.SolverStatusInfeasible
 		return nil
 	}
@@ -92,7 +92,7 @@ func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig)
 		sm.c.SetVec(n+i, 0.)
 	}
 
-	sm.cb = sm.rsmResult.indices
+	sm.cb = sm.indices
 	sm.B = matrix.ExtractColumns(sm.A, sm.cb)
 	// Reuse RHS from Phase 1 (sm.b already points to scf.RHS) to avoid extra allocations
 	sm.b = scf.RHS
@@ -102,10 +102,10 @@ func Simplex(scf *common.StandardComputationalForm, config *common.SolverConfig)
 	if err != nil {
 		return fmt.Errorf("error in Phase 2 of Simplex: %w", err)
 	}
-	*scf.Status = sm.rsmResult.flag
-	if sm.rsmResult.flag == common.SolverStatusOptimal {
-		*scf.ObjectiveValue = sm.rsmResult.value
-		scf.PrimalSolution = sm.rsmResult.x
+	*scf.Status = sm.flag
+	if sm.flag == common.SolverStatusOptimal {
+		*scf.ObjectiveValue = sm.value
+		scf.PrimalSolution = sm.x
 	}
 
 	return nil
@@ -119,19 +119,17 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 		n += sm.m
 	}
 
-	// Initialise the rsmResult
-	sm.rsmResult = rsmResult{
-		flag:    common.SolverStatusNotSolved,
-		value:   0., // z
-		x:       mat.NewVecDense(n, nil),
-		indices: sm.cb,
-	}
+	// Initialise the rsmResult (populate embedded fields)
+	sm.flag = common.SolverStatusNotSolved
+	sm.value = 0. // z
+	sm.x = mat.NewVecDense(n, nil)
+	sm.indices = sm.cb
 
 	// Initialise other variables
 	B := sm.B // RSM mutates B in-place and owns the basis; updateB writes into this matrix
 	cb := mat.NewVecDense(sm.m, nil)
 	for i := range sm.m {
-		index := int(sm.rsmResult.indices.AtVec(i))
+		index := int(sm.indices.AtVec(i))
 		cb.SetVec(i, sm.c.AtVec(index))
 	}
 
@@ -147,8 +145,8 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 		var BT mat.Dense
 		BT.CloneFrom(B.T())
 
-		sm.rsmResult.pi = mat.NewVecDense(sm.m, nil) // Dual variables
-		err = sm.rsmResult.pi.SolveVec(&BT, cb)
+		sm.pi = mat.NewVecDense(sm.m, nil) // Dual variables
+		err = sm.pi.SolveVec(&BT, cb)
 		if err != nil {
 			// Basis is singular, return error
 			return fmt.Errorf("error solving for dual variables: %w", err)
@@ -156,7 +154,7 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 
 		fe := enteringVariable{
 			A:       sm.A,
-			pi:      sm.rsmResult.pi,
+			pi:      sm.pi,
 			c:       sm.c,
 			isbasic: mat.NewVecDense(n, nil),
 
@@ -164,7 +162,7 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 		}
 
 		for i := range sm.m {
-			index := int(sm.rsmResult.indices.AtVec(i))
+			index := int(sm.indices.AtVec(i))
 			if index < n {
 				fe.isbasic.SetVec(index, 1.)
 			}
@@ -177,12 +175,12 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 
 		if fe.s == -1 {
 			// Optimal solution found
-			sm.rsmResult.flag = common.SolverStatusOptimal
-			sm.rsmResult.value = 0.
+			sm.flag = common.SolverStatusOptimal
+			sm.value = 0.
 			for i := range sm.m {
-				index := int(sm.rsmResult.indices.AtVec(i))
-				sm.rsmResult.x.SetVec(index, xb.AtVec(i))
-				sm.rsmResult.value += cb.AtVec(i) * xb.AtVec(i)
+				index := int(sm.indices.AtVec(i))
+				sm.x.SetVec(index, xb.AtVec(i))
+				sm.value += cb.AtVec(i) * xb.AtVec(i)
 			}
 			return nil
 		}
@@ -190,7 +188,7 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 		// Finding the leaving variable
 		fl := leavingVariable{
 			B:       B,
-			indices: sm.rsmResult.indices,
+			indices: sm.indices,
 			as:      fe.as,
 			xb:      xb,
 			phase:   phase,
@@ -204,18 +202,17 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 
 		if fl.r == -1 {
 			// Unbounded solution
-			sm.rsmResult.flag = common.SolverStatusUnbounded
+			sm.flag = common.SolverStatusUnbounded
 			// Set primal solution vector to zero
-			sm.rsmResult.x = mat.NewVecDense(n, nil)
-			fmt.Printf("%v\n", sm.rsmResult.x)
-			sm.rsmResult.value = 0.
+			sm.x = mat.NewVecDense(n, nil)
+			sm.value = 0.
 			return nil
 		}
 
 		// Update B, cb, and indices
 		bu := basisUpdate{
 			BMat:    B,
-			indices: sm.rsmResult.indices,
+			indices: sm.indices,
 			cb:      cb,
 			as:      fe.as,
 			s:       fe.s,
@@ -223,7 +220,9 @@ func RSM(sm *simplexMethod, phase int, config *common.SolverConfig) error {
 			cs:      fe.cs,
 		}
 
-		err = updateB(&bu)
+		if err := updateB(&bu); err != nil {
+			return fmt.Errorf("error updating basis: %w", err)
+		}
 
 	}
 	return errors.New("max iterations reached in RSM")
@@ -330,14 +329,14 @@ func updateB(bu *basisUpdate) error {
 // If an artificial variable has a positive value, it returns an error (infeasible LP).
 func removeArtificialFromBasis(sm *simplexMethod) error {
 	for i := 0; i < sm.m; i++ {
-		index := int(sm.rsmResult.indices.AtVec(i))
+		index := int(sm.indices.AtVec(i))
 		if index >= sm.n { // artificial variable
-			if math.Abs(sm.rsmResult.x.AtVec(index)) < 1e-8 {
+			if math.Abs(sm.x.AtVec(index)) < 1e-8 {
 				// Replace with a non-basic original variable
 				replaced := false
 				for j := 0; j < sm.n; j++ {
-					if !contains(sm.rsmResult.indices, j) {
-						sm.rsmResult.indices.SetVec(i, float64(j))
+					if !contains(sm.indices, j) {
+						sm.indices.SetVec(i, float64(j))
 						replaced = true
 						break
 					}

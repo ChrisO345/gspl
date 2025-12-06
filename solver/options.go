@@ -1,6 +1,8 @@
 package solver
 
 import (
+	"context"
+
 	"github.com/chriso345/gspl/internal/common"
 )
 
@@ -11,6 +13,13 @@ type SolverOption func(*common.SolverConfig)
 func WithTolerance(t float64) SolverOption {
 	return func(cfg *common.SolverConfig) {
 		cfg.Tolerance = t
+	}
+}
+
+// WithContext sets a context for cancellation of long-running solves.
+func WithContext(ctx context.Context) SolverOption {
+	return func(cfg *common.SolverConfig) {
+		cfg.Ctx = ctx
 	}
 }
 

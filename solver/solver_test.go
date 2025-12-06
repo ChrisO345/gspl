@@ -33,7 +33,12 @@ func TestSolve_LinearNoIP(t *testing.T) {
 	}
 
 	t.Logf("[LinearNoIP] Starting solve...")
-	err := Solve(prog)
+	sol, err := Solve(prog)
+	if sol != nil {
+		prog.ObjectiveValue = sol.ObjectiveValue
+		prog.PrimalSolution = sol.PrimalSolution
+		prog.Status = sol.Status
+	}
 	t.Logf("[LinearNoIP] Objective Value: %f", prog.ObjectiveValue)
 	t.Logf("[LinearNoIP] Primal Solution: %v", prog.PrimalSolution.RawVector().Data)
 	t.Logf("[LinearNoIP] Solver Status: %v", prog.Status)
@@ -63,7 +68,12 @@ func TestSolve_Maximization(t *testing.T) {
 	}
 
 	t.Logf("[Maximization] Starting solve...")
-	err := Solve(prog)
+	sol, err := Solve(prog)
+	if sol != nil {
+		prog.ObjectiveValue = sol.ObjectiveValue
+		prog.PrimalSolution = sol.PrimalSolution
+		prog.Status = sol.Status
+	}
 	t.Logf("[Maximization] Objective Value: %f", prog.ObjectiveValue)
 	t.Logf("[Maximization] Primal Solution: %v", prog.PrimalSolution.RawVector().Data)
 	t.Logf("[Maximization] Solver Status: %v", prog.Status)
@@ -92,7 +102,12 @@ func TestSolve_Minimization(t *testing.T) {
 	}
 
 	t.Logf("[Minimization] Starting solve...")
-	err := Solve(prog)
+	sol, err := Solve(prog)
+	if sol != nil {
+		prog.ObjectiveValue = sol.ObjectiveValue
+		prog.PrimalSolution = sol.PrimalSolution
+		prog.Status = sol.Status
+	}
 	t.Logf("[Minimization] Objective Value: %f", prog.ObjectiveValue)
 	t.Logf("[Minimization] Primal Solution: %v", prog.PrimalSolution.RawVector().Data)
 	t.Logf("[Minimization] Solver Status: %v", prog.Status)
@@ -121,7 +136,12 @@ func TestSolve_MinIntegerProgram(t *testing.T) {
 	}
 
 	t.Logf("[MinInteger] Starting solve...")
-	err := Solve(prog)
+	sol, err := Solve(prog)
+	if sol != nil {
+		prog.ObjectiveValue = sol.ObjectiveValue
+		prog.PrimalSolution = sol.PrimalSolution
+		prog.Status = sol.Status
+	}
 	t.Logf("[MinInteger] Objective Value: %f", prog.ObjectiveValue)
 	t.Logf("[MinInteger] Primal Solution: %v", prog.PrimalSolution.RawVector().Data)
 	t.Logf("[MinInteger] Solver Status: %v", prog.Status)
@@ -150,7 +170,12 @@ func TestSolve_MaxIntegerProgram(t *testing.T) {
 	}
 
 	t.Logf("[MaxInteger] Starting solve...")
-	err := Solve(prog)
+	sol, err := Solve(prog)
+	if sol != nil {
+		prog.ObjectiveValue = sol.ObjectiveValue
+		prog.PrimalSolution = sol.PrimalSolution
+		prog.Status = sol.Status
+	}
 	t.Logf("[MaxInteger] Objective Value: %f", prog.ObjectiveValue)
 	t.Logf("[MaxInteger] Primal Solution: %v", prog.PrimalSolution.RawVector().Data)
 	t.Logf("[MaxInteger] Solver Status: %v", prog.Status)
@@ -166,7 +191,7 @@ func TestSolve_ToleranceZeroing(t *testing.T) {
 	constraints := mat.NewDense(1, 1, []float64{1})
 	rhs := mat.NewVecDense(1, []float64{0})
 
-	sol := mat.NewVecDense(1, []float64{1e-10})
+	initialSol := mat.NewVecDense(1, []float64{1e-10})
 
 	prog := &lp.LinearProgram{
 		Sense:          lp.LpMinimise,
@@ -175,12 +200,17 @@ func TestSolve_ToleranceZeroing(t *testing.T) {
 		RHS:            rhs,
 		ConTypes:       []lp.LpConstraintType{lp.LpConstraintLE},
 		Vars:           []lp.LpVariable{{Name: "x"}},
-		PrimalSolution: sol,
+		PrimalSolution: initialSol,
 		Status:         common.SolverStatusNotSolved,
 	}
 
 	t.Logf("[Tolerance] Starting solve...")
-	err := Solve(prog, WithTolerance(1e-6))
+	solution, err := Solve(prog, WithTolerance(1e-6))
+	if solution != nil {
+		prog.ObjectiveValue = solution.ObjectiveValue
+		prog.PrimalSolution = solution.PrimalSolution
+		prog.Status = solution.Status
+	}
 	t.Logf("[Tolerance] Objective Value: %f", prog.ObjectiveValue)
 	t.Logf("[Tolerance] Primal Solution: %v", prog.PrimalSolution.RawVector().Data)
 	t.Logf("[Tolerance] Solver Status: %v", prog.Status)

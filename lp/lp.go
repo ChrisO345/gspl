@@ -21,11 +21,8 @@ type LinearProgram struct {
 	// DualSolution   *mat.VecDense // y*
 	Status common.SolverStatus
 
-	// Simplex internal state (keep unexported)
-	indices  *mat.VecDense
-	piValues *mat.VecDense
-	basis    *mat.Dense
-	cb       *mat.VecDense
+	// Simplex internal state (kept unexported for future use)
+	// (fields removed to satisfy linters until used)
 
 	// Metadata
 	Description string

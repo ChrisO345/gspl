@@ -10,7 +10,7 @@
 * Implements an efficient revised simplex algorithm.
 * Clean and idiomatic API for modeling and solving LPs.
 * Focused on numerical stability and usability.
-* Performs basic branch-and-bouund techniques for pure integer problems.
+* Performs basic branch-and-bound techniques for pure integer problems.
 
 `gspl` is ideal for embedding linear optimization into Go-based software.
 
@@ -43,7 +43,7 @@ func main() {
   variables := []lp.LpVariable{
     lp.NewVariable("x1"),
     lp.NewVariable("x2"),
-  lp.NewVariable("x3"),
+    lp.NewVariable("x3"),
   }
 
   x1 := &variables[0]
@@ -84,9 +84,13 @@ func main() {
   fmt.Printf("%s\n", example.String())
 
   // Solve it
-  solver.Solve(&example)
-  fmt.Printf("Optimal Objective Value: %.2f\n", example.ObjectiveValue)
-  fmt.Printf("Primal Solution: %v\n", example.PrimalSolution.RawVector().Data)
+  sol, err := solver.Solve(&example)
+  if err != nil {
+    fmt.Println("solve error:", err)
+    return
+  }
+  fmt.Printf("Optimal Objective Value: %.2f\n", sol.ObjectiveValue)
+  fmt.Printf("Primal Solution: %v\n", sol.PrimalSolution.RawVector().Data)
 }
 ```
 
@@ -107,6 +111,10 @@ The solution will print the optimal values of the variables and the minimized ob
 See the [examples](examples) directory for other scenarios.
 
 ---
+
+## Performance
+
+A small benchmark is included (go test -bench ./solver) that measures solve performance on a tiny LP; results will vary by CPU and Go version. The solver is optimized for minimal allocations in the revised simplex implementation and supports cancellation via context passed with SolverOption. For concurrent use, provide each goroutine its own *lp.LinearProgram; Solve may temporarily reference fields inside the provided program for performance and thus the same program must not be mutated concurrently during a Solve call.
 
 ## API Overview
 
@@ -174,7 +182,10 @@ Constraint types:
 ### Solving
 
 ```go
-solution := solver.Solve(&lp)
+solution, err := solver.Solve(&lp)
+if err != nil {
+  // handle error
+}
 solution.PrintSolution()
 ```
 

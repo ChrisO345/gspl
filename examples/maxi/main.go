@@ -42,7 +42,11 @@ func main() {
 	fmt.Printf("%s\n", lpProg.String())
 
 	// Solve it
-	solver.Solve(&lpProg)
-	fmt.Printf("Optimal Objective Value: %.2f\n", lpProg.ObjectiveValue)
-	fmt.Printf("Primal Solution: %v\n", lpProg.PrimalSolution.RawVector().Data)
+	sol, err := solver.Solve(&lpProg)
+	if err != nil {
+		fmt.Println("solve error:", err)
+		return
+	}
+	fmt.Printf("Optimal Objective Value: %.2f\n", sol.ObjectiveValue)
+	fmt.Printf("Primal Solution: %v\n", sol.PrimalSolution.RawVector().Data)
 }

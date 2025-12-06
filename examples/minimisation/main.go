@@ -74,7 +74,11 @@ func main() {
 	minProg.AddConstraint(lp.NewExpression(terms6), lp.LpConstraintLE, 6)
 
 	fmt.Printf("%s\n", minProg.String())
-	solver.Solve(&minProg)
-	fmt.Printf("Optimal Objective Value: %.2f\n", minProg.ObjectiveValue)
-	fmt.Printf("Primal Solution: %v\n", minProg.PrimalSolution.RawVector().Data)
+	sol, err := solver.Solve(&minProg)
+	if err != nil {
+		fmt.Println("solve error:", err)
+		return
+	}
+	fmt.Printf("Optimal Objective Value: %.2f\n", sol.ObjectiveValue)
+	fmt.Printf("Primal Solution: %v\n", sol.PrimalSolution.RawVector().Data)
 }

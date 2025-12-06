@@ -1,6 +1,7 @@
 package solver
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/chriso345/gspl/internal/brancher"
@@ -10,56 +11,104 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// Solve solves the given linear program and returns the optimal objective value
-func Solve(prog *lp.LinearProgram, opts ...SolverOption) error {
+// Solution contains the results returned by Solve.
+//
+// The returned Solution provides a snapshot of the computed objective value,
+// the primal solution vector, and a status code describing optimality,
+// infeasibility, or unboundedness. The Solution contains copies of data
+// that callers can safely inspect without referencing the original
+// lp.LinearProgram.
+//
+// Note: for performance the solver may temporarily reuse internal SCF fields
+// that point into the provided LinearProgram; therefore callers MUST NOT mutate
+// the provided *lp.LinearProgram concurrently with a call to Solve.
+// To cancel a long-running solve pass a context using the WithContext option.
+type Solution struct {
+	ObjectiveValue float64
+	PrimalSolution *mat.VecDense
+	Status         common.SolverStatus
+}
+
+// Solve solves the given linear program and returns a Solution and an error.
+//
+// The function returns a populated *Solution on success, or a non-nil error if
+// the solve failed. Solve respects context cancellation when a context is
+// provided via SolverOption (WithContext). It may temporarily link into fields
+// of the provided LinearProgram for efficiency; therefore the provided program
+// must not be mutated concurrently. Solve is safe to call concurrently as long
+// as each goroutine uses a distinct *lp.LinearProgram.
+func Solve(prog *lp.LinearProgram, opts ...SolverOption) (*Solution, error) {
 	// Apply options
 	options := NewSolverConfig(opts...)
+	if options.Ctx == nil {
+		options.Ctx = context.Background()
+	}
 
 	tol := options.Tolerance
 
 	if hasIPConstraints(prog) {
-
 		ip := newIP(prog)
+
+		// Respect context cancellation
+		select {
+		case <-options.Ctx.Done():
+			return nil, options.Ctx.Err()
+		default:
+		}
 
 		// Call the Integer Programming solver
 		err := brancher.BranchAndBound(ip, options)
 		if err != nil {
-			fmt.Println("Error during Solving:", err)
+			return nil, fmt.Errorf("integer solve failed: %w", err)
 		}
 
-		prog.ObjectiveValue = ip.BestObj
-		prog.PrimalSolution = mat.NewVecDense(ip.SCF.NumPrimals, nil)
-		for i := range ip.SCF.NumPrimals {
-			item := ip.BestSolution.AtVec(i)
-			if item < tol && item > -tol {
-				continue
+		sol := &Solution{Status: *ip.SCF.Status}
+		sol.ObjectiveValue = ip.BestObj
+		sol.PrimalSolution = mat.NewVecDense(ip.SCF.NumPrimals, nil)
+		if ip.BestSolution != nil {
+			for i := 0; i < ip.SCF.NumPrimals; i++ {
+				item := ip.BestSolution.AtVec(i)
+				if item < tol && item > -tol {
+					continue
+				}
+				sol.PrimalSolution.SetVec(i, item)
 			}
-			prog.PrimalSolution.SetVec(i, item)
 		}
 
-		return nil
+		return sol, nil
 	}
 
 	// Create the SCF instance
 	scf := newSCF(prog)
 
+	// Respect context cancellation
+	select {
+	case <-options.Ctx.Done():
+		return nil, options.Ctx.Err()
+	default:
+	}
+
 	// Call the Simplex solver
 	if err := simplex.Simplex(scf, options); err != nil {
-		return fmt.Errorf("simplex failed: %w", err)
+		return nil, fmt.Errorf("simplex failed: %w", err)
 	}
 
-	// Remove any artificials and copy the solution back
-	prog.ObjectiveValue = *scf.ObjectiveValue
-	prog.PrimalSolution = mat.NewVecDense(scf.NumPrimals, nil)
-	for i := range scf.NumPrimals {
-		item := scf.PrimalSolution.AtVec(i)
-		if item < tol && item > -tol {
-			continue
+	// Copy the solution back without mutating the original problem state
+	sol := &Solution{Status: *scf.Status}
+	sol.ObjectiveValue = *scf.ObjectiveValue
+	// Ensure we never dereference a nil PrimalSolution from the SCF
+	sol.PrimalSolution = mat.NewVecDense(scf.NumPrimals, nil)
+	if scf.PrimalSolution != nil {
+		for i := 0; i < scf.NumPrimals; i++ {
+			item := scf.PrimalSolution.AtVec(i)
+			if item < tol && item > -tol {
+				continue
+			}
+			sol.PrimalSolution.SetVec(i, item)
 		}
-		prog.PrimalSolution.SetVec(i, item)
 	}
 
-	return nil
+	return sol, nil
 }
 
 // newSCF creates a new SCF instance for the linear program

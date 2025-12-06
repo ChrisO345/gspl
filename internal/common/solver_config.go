@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -9,6 +10,9 @@ type SolverConfig struct {
 	Logging       bool
 	Tolerance     float64
 	MaxIterations int
+
+	// Context for cancellation
+	Ctx context.Context
 
 	// IP Specific Options
 	GapSensitivity float64
@@ -28,6 +32,7 @@ func DefaultSolverConfig() *SolverConfig {
 		Logging:       false, // Default logging is off
 		Tolerance:     1e-6,
 		MaxIterations: 1000,
+		Ctx:           context.Background(),
 
 		GapSensitivity: 0.05,
 		Branch:         nil, // Default branching strategy defined in `brancher`
@@ -57,6 +62,10 @@ func ValidateSolverConfig(cfg *SolverConfig) error {
 
 	if cfg.Debug {
 		cfg.Logging = true
+	}
+
+	if cfg.Ctx == nil {
+		cfg.Ctx = context.Background()
 	}
 
 	return nil

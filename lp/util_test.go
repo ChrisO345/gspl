@@ -34,7 +34,9 @@ func TestPrintSolution(t *testing.T) {
 
 	lp.PrintSolution()
 
-	w.Close()
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close pipe writer: %v", err)
+	}
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(r)
 	os.Stdout = oldStdout
